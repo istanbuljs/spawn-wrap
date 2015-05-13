@@ -65,6 +65,9 @@ function wrap (args, envs) {
     if (pathEnv) {
       p += ':' + pathEnv
     }
+    // always ensure SOME node will be available!
+    // Also, bash programs don't work well without 'cd' etc
+    p += ':' + path.dirname(process.execPath) + ':' + process.env.PATH
     options.envPairs.push('PATH=' + p)
 
     return spawn.call(this, options)
