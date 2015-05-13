@@ -8,7 +8,8 @@ var mkdirp = require('mkdirp')
 var rimraf = require('rimraf')
 var path = require('path')
 
-var shim = fs.readFileSync(__dirname + '/shim.sh')
+var shim = '#!' + process.execPath + '\n' +
+  fs.readFileSync(__dirname + '/shim.js')
 
 var pathRe = /^PATH=/
 if (process.platform === 'win32' ||
@@ -19,7 +20,7 @@ if (process.platform === 'win32' ||
 
 var wrapMain = require.resolve('./wrap-main.js')
 
-function wrap (args, envs) {
+function wrap (argv, env, workingDir) {
   if (!ChildProcess) {
     // sure would be nice if the class were exposed...
     var child = cp.spawn('echo', [])
@@ -27,19 +28,29 @@ function wrap (args, envs) {
     child.kill('SIGKILL')
   }
 
-  var workingDir = setup(args, envs)
+  // if we're passed in the working dir, then it means that setup
+  // was already done, so no need.
+  var doSetup = !workingDir
+  if (doSetup) {
+    workingDir = setup(argv, env)
+  }
   var spawn = ChildProcess.prototype.spawn
 
   function unwrap () {
-    rimraf.sync(workingDir)
+    if (doSetup) {
+      rimraf.sync(workingDir)
+    }
     ChildProcess.prototype.spawn = spawn
   }
 
   ChildProcess.prototype.spawn = function (options) {
     var pathEnv
 
+    // handle case where node/iojs is exec'd
+    // this doesn't handle EVERYTHING, but just the most common
+    // case of doing `exec(process.execPath + ' file.js')
     var file = path.basename(options.file)
-    if (file === 'sh' || file === 'bash') {
+    if (file === 'sh' || file === 'bash' || file === 'zsh') {
       var cmdi = options.args.indexOf('-c')
       if (cmdi !== -1) {
         var c = options.args[cmdi + 1]
@@ -53,6 +64,9 @@ function wrap (args, envs) {
           }
         }
       }
+    } else if (file === 'node' || file === 'iojs') {
+      options.file = workingDir + '/' + file
+      options.args[0] = workingDir + '/' + file
     }
 
     for (var i = 0; i < options.envPairs.length; i++) {
@@ -65,9 +79,6 @@ function wrap (args, envs) {
     if (pathEnv) {
       p += ':' + pathEnv
     }
-    // always ensure SOME node will be available!
-    // Also, bash programs don't work well without 'cd' etc
-    p += ':' + path.dirname(process.execPath) + ':' + process.env.PATH
     options.envPairs.push('PATH=' + p)
 
     return spawn.call(this, options)
@@ -76,58 +87,56 @@ function wrap (args, envs) {
   return unwrap
 }
 
-function setup (args, envs) {
-  if (args && typeof args === 'object' && !envs && !Array.isArray(args)) {
-    envs = args
-    args = []
+function setup (argv, env) {
+  if (argv && typeof argv === 'object' && !env && !Array.isArray(argv)) {
+    env = argv
+    argv = []
   }
 
-  if (!args && !envs) {
-    throw new Error('at least one of "args" and "envs" required')
+  if (!argv && !env) {
+    throw new Error('at least one of "argv" and "env" required')
   }
 
-  if (args) {
-    assert(Array.isArray(args), 'args must be array')
+  if (argv) {
+    assert(Array.isArray(argv), 'argv must be array')
   } else {
-    args = []
+    argv = []
   }
 
-  var pairs = []
-  if (envs) {
-    assert.equal(typeof envs, 'object', 'envs must be object')
-    pairs = Object.keys(envs).map(function (k) {
-      return k + '=' + envs[k]
-    })
+  if (env) {
+    assert(typeof env === 'object', 'env must be an object')
+  } else {
+    env = {}
   }
 
   // For stuff like --use_strict or --harmony, we need to inject
   // the argument *before* the wrap-main.
-  var execArgs = []
-  for (var i = 0; i < args.length; i++) {
-    if (args[i].match(/^-/)) {
-      execArgs.push(args[i])
+  var execArgv = []
+  for (var i = 0; i < argv.length; i++) {
+    if (argv[i].match(/^-/)) {
+      execArgv.push(argv[i])
+      if (argv[i] === '-r' || argv[i] === '--require') {
+        execArgv.push(argv[++i])
+      }
     } else {
       break
     }
   }
-  if (execArgs.length) {
-    if (execArgs.length === args.length) {
-      args.length = 0
+  if (execArgv.length) {
+    if (execArgv.length === argv.length) {
+      argv.length = 0
     } else {
-      args = args.slice(execArgs.length)
+      argv = argv.slice(execArgv.length)
     }
   }
 
-  var injectArgs = execArgs.concat(wrapMain)
-  injectArgs.push('--args=' + args.length)
-  injectArgs.push.apply(injectArgs, args)
-
-  injectArgs.push('--envs=' + pairs.length)
-  pairs.forEach(function (k) {
-    injectArgs.push(k)
-  })
-
-  injectArgs.push('--')
+  var settings = JSON.stringify({
+    module: __filename,
+    argv: argv,
+    execArgv: execArgv,
+    env: env,
+    root: process.pid
+  }, null, 2) + '\n'
 
   var workingDir = '/tmp/node-spawn-wrap-' + process.pid + '-' +
     crypto.randomBytes(6).toString('hex')
@@ -142,8 +151,7 @@ function setup (args, envs) {
   fs.chmodSync(workingDir + '/node', '0755')
   fs.writeFileSync(workingDir + '/iojs', shim)
   fs.chmodSync(workingDir + '/iojs', '0755')
-  fs.writeFileSync(workingDir + '/_env', pairs.join('\n') + '\n')
-  fs.writeFileSync(workingDir + '/_args', injectArgs.join('\n') + '\n')
+  fs.writeFileSync(workingDir + '/settings.json', settings)
 
   return workingDir
 }
