@@ -11,11 +11,17 @@ var path = require('path')
 var shim = '#!' + process.execPath + '\n' +
   fs.readFileSync(__dirname + '/shim.js')
 
+var cmdShim = 'SETLOCAL\r\n' +
+  'SET PATHEXT=%PATHEXT:;.JS;=;%\r\n' +
+  process.execPath + ' "%~dp0\\.\\node" %*\r\n'
+
+var isWindows = false
 var pathRe = /^PATH=/
 if (process.platform === 'win32' ||
   process.env.OSTYPE === 'cygwin' ||
   process.env.OSTYPE === 'msys') {
   pathRe = /^PATH=/i
+  isWindows = true
 }
 
 var wrapMain = require.resolve('./wrap-main.js')
@@ -45,21 +51,38 @@ function wrap (argv, env, workingDir) {
 
   ChildProcess.prototype.spawn = function (options) {
     var pathEnv
+    var cmdi, c, re, match, exe
 
     // handle case where node/iojs is exec'd
     // this doesn't handle EVERYTHING, but just the most common
     // case of doing `exec(process.execPath + ' file.js')
     var file = path.basename(options.file)
     if (file === 'sh' || file === 'bash' || file === 'zsh') {
-      var cmdi = options.args.indexOf('-c')
+      cmdi = options.args.indexOf('-c')
       if (cmdi !== -1) {
-        var c = options.args[cmdi + 1]
-        var re = /^\s*((?:[^\=]*\=[^\=\s]*\s*)*)([^\s]+)/
-        var match = c.match(re)
+        c = options.args[cmdi + 1]
+        re = /^\s*((?:[^\=]*\=[^\=\s]*\s*)*)([^\s]+)/
+        match = c.match(re)
         if (match) {
-          var exe = path.basename(match[2])
+          exe = path.basename(match[2])
           if (exe === 'iojs' || exe === 'node') {
             c = c.replace(re, '$1' + exe)
+            options.args[cmdi + 1] = c
+          }
+        }
+      }
+    } else if (isWindows && (
+        file === path.basename(process.env.comspec) ||
+        file === 'cmd.exe')) {
+      cmdi = options.args.indexOf('/c')
+      if (cmdi !== -1) {
+        c = options.args[cmdi + 1]
+        re = new RegExp('^\\s*"([^\\s]*(?:node|iojs)) ')
+        match = c.match(re)
+        if (match) {
+          exe = path.basename(match[1]).replace(/\.exe$/, '')
+          if (exe === 'node' || exe === 'iojs') {
+            c = c.replace(re, exe + ' ')
             options.args[cmdi + 1] = c
           }
         }
@@ -147,6 +170,12 @@ function setup (argv, env) {
 
   mkdirp.sync(workingDir)
   workingDir = fs.realpathSync(workingDir)
+  if (isWindows) {
+    fs.writeFileSync(workingDir + '/node.cmd', cmdShim)
+    fs.chmodSync(workingDir + '/node.cmd', '0755')
+    fs.writeFileSync(workingDir + '/iojs.cmd', cmdShim)
+    fs.chmodSync(workingDir + '/iojs.cmd', '0755')
+  }
   fs.writeFileSync(workingDir + '/node', shim)
   fs.chmodSync(workingDir + '/node', '0755')
   fs.writeFileSync(workingDir + '/iojs', shim)
