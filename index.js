@@ -105,8 +105,6 @@ function setup (args, envs) {
 
   injectArgs.push('--')
 
-  var spliceArgs = [1, 0].concat(injectArgs)
-
   var workingDir = '/tmp/node-spawn-wrap-' + process.pid + '-' +
       crypto.randomBytes(6).toString('hex')
 
