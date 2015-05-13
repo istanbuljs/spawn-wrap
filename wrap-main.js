@@ -1,24 +1,43 @@
 #!/usr/bin/env node
 
-console.log('IN THE WRAPAMABOB', process.argv)
+// This module should *only* be loaded as a main script
+// by child processes wrapped by spawn-wrap.  It sets up
+// argv to include the injected args (including the user's
+// wrapper script) and any environment variables specified.
+//
+// These args and envs get passed in like so:
+// --args=2 x.js -y=z --envs=1 FOO=bar -- <original argv>
+//
+// So, the effective argv to node becomes:
+// node x.js -y=z <original argv>
+//
+// If any args were passed in (ie, if it's used to force
+// a wrapper script, and not just ensure that an env is kept
+// around through all the child procs), then we also set up
+// a require('spawn-wrap').runMain() function that will strip
+// off the injected arguments and run the main file.
+
 if (module !== require.main) {
-  console.error('are you quite sure this is what you want?')
+  throw new Error('spawn-wrap: cli wrapper invoked as non-main script')
   process.exit(1)
 }
 
+var Module = require('module')
 var assert = require('assert')
-var n = +(process.argv[2].match(/^--args=([0-9]+)$/)[1])
-assert(!isNaN(n) && n >= 0)
+var path = require('path')
+
+var nargs = +(process.argv[2].match(/^--args=([0-9]+)$/)[1])
+assert(!isNaN(nargs) && nargs >= 0)
 var injectArgs = []
 var i
-for (i = 3; i < n + 3; i++) {
+for (i = 3; i < nargs + 3; i++) {
   injectArgs.push(process.argv[i])
 }
 
-var n = +(process.argv[i].match(/^--envs=([0-9]+)$/)[1])
-assert(!isNaN(n) && n >= 0)
+var nenvs = +(process.argv[i].match(/^--envs=([0-9]+)$/)[1])
+assert(!isNaN(nenvs) && nenvs >= 0)
 var start = i + 1
-for (i = start; i < start + n; i++) {
+for (i = start; i < start + nenvs; i++) {
   var kv = process.argv[i].split('=')
   var key = kv.shift()
   var val = kv.join('=')
@@ -26,12 +45,28 @@ for (i = start; i < start + n; i++) {
 }
 
 assert.equal(process.argv[i], '--')
-var n = i - 1
 var spliceArgs = [1, i].concat(injectArgs)
 process.argv.splice.apply(process.argv, spliceArgs)
 
-console.error(process.argv)
+// If the user added their OWN wrapper pre-load script, then
+// this will pop that off of the args, and load the "real" main
+function runMain() {
+  process.argv.splice(1, nargs)
+  process.argv[1] = path.resolve(process.argv[1])
+  clearModuleCache()
+  Module.runMain()
+}
 
-delete require('module')._cache[__filename]
-console.log('About to run main file: %j', process.argv[1])
-require('module').runMain()
+function clearModuleCache() {
+  // A recipe for memory leaks!  Never ever do this, omg!
+  Object.keys(Module._cache).forEach(function (k) {
+    delete Module._cache[k]
+  })
+}
+
+clearModuleCache()
+if (nargs) {
+  require('./index.js').runMain = runMain
+}
+
+Module.runMain()

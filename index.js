@@ -1,27 +1,41 @@
-// sure would be nice if the class were exposed...
+module.exports = wrap
 var cp = require('child_process')
 var fs = require('fs')
-var child = cp.spawn('echo', [])
-var ChildProcess = child.constructor
+var ChildProcess
 var path = require('path')
-var which = require('which')
 var assert = require('assert')
-child.kill('SIGKILL')
+var crypto = require('crypto')
+var mkdirp = require('mkdirp')
+var rimraf = require('rimraf')
 
-var shebangRe = new RegExp(
-  '^#!' +
-  '(?:(?:(?:\\/usr)?\\/bin\\/)?env (iojs|node))' + // $1 - env lookup
-  '|' +
-  '(.*\\/(?:iojs|node))' // $2 - absolute path
-)
+var shim = fs.readFileSync(__dirname + '/shim.sh')
+
+var pathRe = /^PATH=/
+if (process.platform === 'win32' ||
+  process.env.OSTYPE === 'cygwin' ||
+  process.env.OSTYPE === 'msys') {
+  pathRe = /^PATH=/i
+}
 
 var wrapMain = require.resolve('./wrap-main.js')
-
 var hasDashR = /^(1\.[6-9]|2)\./.test(process.version)
 
-module.exports = wrap
-
 function wrap (args, envs) {
+  if (!ChildProcess) {
+    // sure would be nice if the class were exposed...
+    var child = cp.spawn('echo', [])
+    ChildProcess = child.constructor
+    child.kill('SIGKILL')
+  }
+
+  if (args && typeof args === 'object' && !envs && !Array.isArray(args)) {
+    env = args
+    args = []
+  }
+
+  if (!args && !env)
+    throw new Error('at least one of "args" and "env" required')
+
   if (args)
     assert(Array.isArray(args), 'args must be array')
   else
@@ -36,9 +50,24 @@ function wrap (args, envs) {
   }
 
   var spawn = ChildProcess.prototype.spawn
-  var exec = cp.exec
 
-  var injectArgs = [wrapMain]
+  // For stuff like --use_strict or --harmony, we need to inject
+  // the argument *before* the wrap-main.
+  var execArgs = []
+  for (var i = 0; i < args.length; i++) {
+    if (args[i].match(/^-/))
+      execArgs.push(args[i])
+    else
+      break
+  }
+  if (execArgs.length) {
+    if (execArgs.length === args.length)
+      args.length = 0
+    else
+      args = args.slice(execArgs.length)
+  }
+
+  var injectArgs = execArgs.concat(wrapMain)
   injectArgs.push('--args=' + args.length)
   injectArgs.push.apply(injectArgs, args)
 
@@ -51,87 +80,42 @@ function wrap (args, envs) {
 
   var spliceArgs = [1, 0].concat(injectArgs)
 
+  var workingDir = '/tmp/node-spawn-wrap-' + process.pid + '-' +
+      crypto.randomBytes(6).toString('hex')
+
+  process.on('exit', function () {
+    rimraf.sync(workingDir)
+  })
+
+  mkdirp.sync(workingDir)
+  workingDir = fs.realpathSync(workingDir)
+  fs.writeFileSync(workingDir + '/node', shim)
+  fs.chmodSync(workingDir + '/node', '0755')
+  fs.writeFileSync(workingDir + '/iojs', shim)
+  fs.chmodSync(workingDir + '/iojs', '0755')
+  fs.writeFileSync(workingDir + '/_env', pairs.join('\n') + '\n')
+  fs.writeFileSync(workingDir + '/_args', injectArgs.join('\n') + '\n')
+
   function unwrap () {
+    rimraf.sync(workingDir)
     ChildProcess.prototype.spawn = spawn
-    cp.exec = exec
   }
 
   ChildProcess.prototype.spawn = function (options) {
-    // TODO: Have to look up shebangs for spawn as well.
+    var pathEnv
 
-    if (options.file === process.execPath ||
-        path.basename(options.file) === 'node' ||
-        path.basename(options.file) === 'iojs') {
-      options.args.splice.apply(options.args, spliceArgs)
-      if (envs)
-        options.envPairs.push.apply(options.envPairs, pairs)
+    for (var i = 0; i < options.envPairs.length; i++) {
+      var ep = options.envPairs[i]
+      if (ep.match(pathRe))
+        pathEnv = ep.substr(5)
     }
+    var p = workingDir
+    if (pathEnv) {
+      p += ':' + pathEnv
+    }
+    options.envPairs.push('PATH=' + p)
 
     return spawn.call(this, options)
-  }
-
-  cp.exec = function (command /*...*/) {
-    var doWrap = false
-
-    // if the first cmd is node, we definitely wrap
-    var b = command.trim().split(/\s+/)
-    var shebang = null
-    var exe = b[0]
-    if (path.basename(exe) === 'node' ||
-        path.basename(exe) === 'iojs' ||
-        exe === process.execPath) {
-      doWrap = true
-    } else {
-      // might be a shebang.  Check for that.
-      // no way to do this without sync i/o
-      try {
-        // TODO: this uses the *caller's* PATH environ, but in fact,
-        // when the shell looks up the file to execute, it is using
-        // the *callee's* PATH.  The 'which' module must be extended
-        // to take a PATH as an argument.
-        var resolved = which.sync(b[0])
-        var fd = fs.openSync(resolved, 'r')
-        var buf = new Buffer(1024)
-        fs.readSync(fd, buf, 0, 1024)
-        var chunk = buf.toString().split(/\n/)[0]
-        console.error('shebang line', chunk)
-        shebang = chunk.match(shebangRe)
-        if (shebang)
-          doWrap = true
-      } catch (er) {
-        console.error('exec shebang lookup failed', er)
-        // oh well, not ours.
-        try { fs.closeSync(fd) } catch (er) {}
-        doWrap = false
-      }
-    }
-
-    var args
-    if (doWrap) {
-      command = command.trim()
-      var node = exe
-      if (shebang) {
-        node = shebang[1] || shebang[2] || process.execPath
-        command = resolved + command.substr(exe.length)
-      } else {
-        command = command.substr(exe.length)
-      }
-
-      command = [node].concat(injectArgs.map(function (a) {
-        return JSON.stringify(a)
-      })).join(' ') + ' ' + command
-
-      args = [ command ]
-      for (var i = 1; i < arguments.length; i++) {
-        args.push(arguments[i])
-      }
-      console.error('exec wrapped!', command)
-    } else {
-      args = arguments
-    }
-
-    console.error('wrapping', args)
-    return exec.apply(cp, args)
   }
 
   return unwrap
