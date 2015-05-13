@@ -57,9 +57,7 @@ main () {
       args[${#args[@]}]=$a
     done
     args=("${args[@]}" "$@")
-    set -x
     env $(cat $dn/_env) $exe "${args[@]}"
-    set +x
   }
 }
 

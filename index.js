@@ -28,13 +28,42 @@ function wrap (args, envs) {
     child.kill('SIGKILL')
   }
 
+  var workingDir = setup(args, envs)
+  var spawn = ChildProcess.prototype.spawn
+
+  function unwrap () {
+    rimraf.sync(workingDir)
+    ChildProcess.prototype.spawn = spawn
+  }
+
+  ChildProcess.prototype.spawn = function (options) {
+    var pathEnv
+
+    for (var i = 0; i < options.envPairs.length; i++) {
+      var ep = options.envPairs[i]
+      if (ep.match(pathRe))
+        pathEnv = ep.substr(5)
+    }
+    var p = workingDir
+    if (pathEnv) {
+      p += ':' + pathEnv
+    }
+    options.envPairs.push('PATH=' + p)
+
+    return spawn.call(this, options)
+  }
+
+  return unwrap
+}
+
+function setup (args, envs) {
   if (args && typeof args === 'object' && !envs && !Array.isArray(args)) {
-    env = args
+    envs = args
     args = []
   }
 
-  if (!args && !env)
-    throw new Error('at least one of "args" and "env" required')
+  if (!args && !envs)
+    throw new Error('at least one of "args" and "envs" required')
 
   if (args)
     assert(Array.isArray(args), 'args must be array')
@@ -48,8 +77,6 @@ function wrap (args, envs) {
       return k + '=' + envs[k]
     })
   }
-
-  var spawn = ChildProcess.prototype.spawn
 
   // For stuff like --use_strict or --harmony, we need to inject
   // the argument *before* the wrap-main.
@@ -96,27 +123,5 @@ function wrap (args, envs) {
   fs.writeFileSync(workingDir + '/_env', pairs.join('\n') + '\n')
   fs.writeFileSync(workingDir + '/_args', injectArgs.join('\n') + '\n')
 
-  function unwrap () {
-    rimraf.sync(workingDir)
-    ChildProcess.prototype.spawn = spawn
-  }
-
-  ChildProcess.prototype.spawn = function (options) {
-    var pathEnv
-
-    for (var i = 0; i < options.envPairs.length; i++) {
-      var ep = options.envPairs[i]
-      if (ep.match(pathRe))
-        pathEnv = ep.substr(5)
-    }
-    var p = workingDir
-    if (pathEnv) {
-      p += ':' + pathEnv
-    }
-    options.envPairs.push('PATH=' + p)
-
-    return spawn.call(this, options)
-  }
-
-  return unwrap
+  return workingDir
 }
