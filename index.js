@@ -1,4 +1,6 @@
 module.exports = wrap
+wrap.runMain = runMain
+
 var cp = require('child_process')
 var fs = require('fs')
 var ChildProcess
@@ -23,8 +25,6 @@ if (process.platform === 'win32' ||
   pathRe = /^PATH=/i
   isWindows = true
 }
-
-var wrapMain = require.resolve('./wrap-main.js')
 
 function wrap (argv, env, workingDir) {
   if (!ChildProcess) {
@@ -183,4 +183,18 @@ function setup (argv, env) {
   fs.writeFileSync(workingDir + '/settings.json', settings)
 
   return workingDir
+}
+
+function runMain () {
+  process.argv.splice(1, 1)
+  process.argv[1] = path.resolve(process.argv[1])
+  clearModuleCache()
+  Module.runMain()
+}
+
+function clearModuleCache () {
+  // A recipe for memory leaks!  Never ever do this, omg!
+  Object.keys(Module._cache).forEach(function (k) {
+    delete Module._cache[k]
+  })
 }
