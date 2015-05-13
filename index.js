@@ -2,7 +2,6 @@ module.exports = wrap
 var cp = require('child_process')
 var fs = require('fs')
 var ChildProcess
-var path = require('path')
 var assert = require('assert')
 var crypto = require('crypto')
 var mkdirp = require('mkdirp')
@@ -18,7 +17,6 @@ if (process.platform === 'win32' ||
 }
 
 var wrapMain = require.resolve('./wrap-main.js')
-var hasDashR = /^(1\.[6-9]|2)\./.test(process.version)
 
 function wrap (args, envs) {
   if (!ChildProcess) {
@@ -41,8 +39,9 @@ function wrap (args, envs) {
 
     for (var i = 0; i < options.envPairs.length; i++) {
       var ep = options.envPairs[i]
-      if (ep.match(pathRe))
+      if (ep.match(pathRe)) {
         pathEnv = ep.substr(5)
+      }
     }
     var p = workingDir
     if (pathEnv) {
@@ -62,13 +61,15 @@ function setup (args, envs) {
     args = []
   }
 
-  if (!args && !envs)
+  if (!args && !envs) {
     throw new Error('at least one of "args" and "envs" required')
+  }
 
-  if (args)
+  if (args) {
     assert(Array.isArray(args), 'args must be array')
-  else
+  } else {
     args = []
+  }
 
   var pairs = []
   if (envs) {
@@ -82,16 +83,18 @@ function setup (args, envs) {
   // the argument *before* the wrap-main.
   var execArgs = []
   for (var i = 0; i < args.length; i++) {
-    if (args[i].match(/^-/))
+    if (args[i].match(/^-/)) {
       execArgs.push(args[i])
-    else
+    } else {
       break
+    }
   }
   if (execArgs.length) {
-    if (execArgs.length === args.length)
+    if (execArgs.length === args.length) {
       args.length = 0
-    else
+    } else {
       args = args.slice(execArgs.length)
+    }
   }
 
   var injectArgs = execArgs.concat(wrapMain)
@@ -106,7 +109,7 @@ function setup (args, envs) {
   injectArgs.push('--')
 
   var workingDir = '/tmp/node-spawn-wrap-' + process.pid + '-' +
-      crypto.randomBytes(6).toString('hex')
+    crypto.randomBytes(6).toString('hex')
 
   process.on('exit', function () {
     rimraf.sync(workingDir)

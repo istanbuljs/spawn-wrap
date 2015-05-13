@@ -19,7 +19,6 @@
 
 if (module !== require.main) {
   throw new Error('spawn-wrap: cli wrapper invoked as non-main script')
-  process.exit(1)
 }
 
 var Module = require('module')
@@ -50,14 +49,14 @@ process.argv.splice.apply(process.argv, spliceArgs)
 
 // If the user added their OWN wrapper pre-load script, then
 // this will pop that off of the args, and load the "real" main
-function runMain() {
+function runMain () {
   process.argv.splice(1, nargs)
   process.argv[1] = path.resolve(process.argv[1])
   clearModuleCache()
   Module.runMain()
 }
 
-function clearModuleCache() {
+function clearModuleCache () {
   // A recipe for memory leaks!  Never ever do this, omg!
   Object.keys(Module._cache).forEach(function (k) {
     delete Module._cache[k]
