@@ -6,6 +6,7 @@ var assert = require('assert')
 var crypto = require('crypto')
 var mkdirp = require('mkdirp')
 var rimraf = require('rimraf')
+var path = require('path')
 
 var shim = fs.readFileSync(__dirname + '/shim.sh')
 
@@ -36,6 +37,23 @@ function wrap (args, envs) {
 
   ChildProcess.prototype.spawn = function (options) {
     var pathEnv
+
+    var file = path.basename(options.file)
+    if (file === 'sh' || file === 'bash') {
+      var cmdi = options.args.indexOf('-c')
+      if (cmdi !== -1) {
+        var c = options.args[cmdi + 1]
+        var re = /^\s*((?:[^\=]*\=[^\=\s]*\s*)*)([^\s]+)/
+        var match = c.match(re)
+        if (match) {
+          var exe = path.basename(match[2])
+          if (exe === 'iojs' || exe === 'node') {
+            c = c.replace(re, '$1' + exe)
+            options.args[cmdi + 1] = c
+          }
+        }
+      }
+    }
 
     for (var i = 0; i < options.envPairs.length; i++) {
       var ep = options.envPairs[i]

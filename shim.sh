@@ -41,16 +41,16 @@ cleanPath () {
       newpath[${#newpath[@]}]=$p
     fi
   done
-  newpath="${newpath[*]}"
+  echo "${newpath[*]}"
   export IFS=$s
-  export PATH=$newpath
 }
 
 main () {
-  cleanPath
   local fn=$(__filename)
   local dn=$(dirname -- "$fn")
   local exe=$(basename -- "$fn")
+  exe="$(PATH=$(cleanPath) which $exe)"
+
   cat $dn/_args | {
     local args=()
     while read a; do
