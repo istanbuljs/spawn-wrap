@@ -58,5 +58,5 @@ be using this script in any production environments anyway.
 Also, this will slow down child process execution by a lot, since
 we're adding a few layers of indirection.
 
-Currently only works on systems that support shebangs and have bash,
-ie, all unixes and no windows.
+I would not be very surprised to find out that it works on Windows.
+No way to tell for certain, though.
