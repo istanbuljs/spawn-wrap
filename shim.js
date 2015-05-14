@@ -13,6 +13,7 @@ if (module !== require.main) {
   throw new Error('spawn-wrap: cli wrapper invoked as non-main script')
 }
 
+// require('fs').createWriteStream('/dev/tty').write('WRAP ' + process.argv.slice(2).join(' ') + '\n')
 var Module = require('module')
 var assert = require('assert')
 var path = require('path')
@@ -57,18 +58,75 @@ process.argv.splice.apply(process.argv, spliceArgs)
 function runMain () {
   process.argv.splice(1, nargs)
   process.argv[1] = path.resolve(process.argv[1])
-  clearModuleCache()
   Module.runMain()
 }
 
-function clearModuleCache () {
-  // A recipe for memory leaks!  Never ever do this, omg!
-  Object.keys(Module._cache).forEach(function (k) {
-    delete Module._cache[k]
-  })
+var hasMain = false
+for (var a = 2; !hasMain && a < process.argv.length; a++) {
+  switch (process.argv[a]) {
+    case '-i':
+    case '--interactive':
+    case '--eval':
+    case '-e':
+    case '-pe':
+      hasMain = false
+      a = process.argv.length
+      continue
+
+    case '-r':
+    case '--require':
+      a += 1
+      continue
+
+    default:
+      if (process.argv[a].match(/^-/)) {
+        continue
+      } else {
+        hasMain = true
+        a = process.argv.length
+        break
+      }
+  }
 }
 
-clearModuleCache()
+if (!hasMain) {
+  // we got loaded by mistake for a `node -pe script` or something.
+  var child = require('child_process').spawn(
+    process.execPath,
+    process.execArgv.concat(process.argv.slice(2)),
+    { stdio: 'inherit' }
+  )
+  child.on('close', function (code, signal) {
+    if (signal) {
+      process.kill(process.pid, signal)
+    } else {
+      process.exit(code)
+    }
+  })
+  return
+}
+
+var isWindows = false
+var pathRe = /^PATH=/
+if (process.platform === 'win32' ||
+  process.env.OSTYPE === 'cygwin' ||
+  process.env.OSTYPE === 'msys') {
+  pathRe = /^PATH=/i
+  isWindows = true
+}
+
+// Unwrap the PATH environment var so that we're not mucking
+// with the environment.  It'll get re-added if they spawn anything
+if (isWindows) {
+  for (var i in process.env) {
+    if (i.match(/^path$/i)) {
+      process.env[i] = process.env[i].replace(__dirname + ';', '')
+    }
+  }
+} else {
+  process.env.PATH = process.env.PATH.replace(__dirname + ':', '')
+}
+
 var spawnWrap = require(settings.module)
 if (nargs) {
   spawnWrap.runMain = runMain

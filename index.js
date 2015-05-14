@@ -1,7 +1,7 @@
 module.exports = wrap
 wrap.runMain = runMain
 
-var cp = require('child_process')
+var Module = require('module')
 var fs = require('fs')
 var ChildProcess
 var assert = require('assert')
@@ -26,10 +26,12 @@ if (process.platform === 'win32' ||
   isWindows = true
 }
 
+var colon = isWindows ? ';' : ':'
+
 function wrap (argv, env, workingDir) {
   if (!ChildProcess) {
     // sure would be nice if the class were exposed...
-    var child = cp.spawn('echo', [])
+    var child = require('child_process').spawn(process.execPath, [])
     ChildProcess = child.constructor
     child.kill('SIGKILL')
   }
@@ -50,6 +52,8 @@ function wrap (argv, env, workingDir) {
   }
 
   ChildProcess.prototype.spawn = function (options) {
+    // var out = fs.createWriteStream('/dev/tty')
+    // out.write('\nSPAWN ' + options.args.join(' ') + '\n')
     var pathEnv
     var cmdi, c, re, match, exe
 
@@ -58,10 +62,11 @@ function wrap (argv, env, workingDir) {
     // case of doing `exec(process.execPath + ' file.js')
     var file = path.basename(options.file)
     if (file === 'sh' || file === 'bash' || file === 'zsh') {
+      // out.write('\n  shell file\n')
       cmdi = options.args.indexOf('-c')
       if (cmdi !== -1) {
         c = options.args[cmdi + 1]
-        re = /^\s*((?:[^\=]*\=[^\=\s]*\s*)*)([^\s]+)/
+        re = /^\s*((?:[^\= ]*\=[^\=\s]*\s*)*)([^\s]+)/
         match = c.match(re)
         if (match) {
           exe = path.basename(match[2])
@@ -71,6 +76,7 @@ function wrap (argv, env, workingDir) {
           }
         }
       }
+      // out.write('\n  shell '+options.args.join(' ')+'\n')
     } else if (isWindows && (
         file === path.basename(process.env.comspec) ||
         file === 'cmd.exe')) {
@@ -88,22 +94,60 @@ function wrap (argv, env, workingDir) {
         }
       }
     } else if (file === 'node' || file === 'iojs') {
-      options.file = workingDir + '/' + file
-      options.args[0] = workingDir + '/' + file
+      // out.write('\n  node '+options.args.join(' ')+'\n')
+      // make sure it has a main script.
+      // otherwise, just let it through.
+      var a = 0
+      var hasMain = false
+      for (var a = 1; !hasMain && a < options.args.length; a++) {
+        switch (options.args[a]) {
+          case '-i':
+          case '--interactive':
+          case '--eval':
+          case '-e':
+          case '-pe':
+            hasMain = false
+            a = options.args.length
+            continue
+
+          case '-r':
+          case '--require':
+            a += 1
+            continue
+
+          default:
+            if (options.args[a].match(/^-/)) {
+              continue
+            } else {
+              hasMain = true
+              a = options.args.length
+              break
+            }
+        }
+      }
+
+      if (hasMain) {
+        options.file = workingDir + '/' + file
+        options.args[0] = workingDir + '/' + file
+        // out.write('\n  has main '+options.args.join(' ')+'\n')
+      }
     }
 
     for (var i = 0; i < options.envPairs.length; i++) {
       var ep = options.envPairs[i]
       if (ep.match(pathRe)) {
         pathEnv = ep.substr(5)
+        var k = ep.substr(0, 5)
+        options.envPairs[i] = k + workingDir + colon + pathEnv
       }
     }
-    var p = workingDir
-    if (pathEnv) {
-      p += ':' + pathEnv
+    if (!pathEnv) {
+      options.envPairs.push((isWindows ? 'Path=' : 'PATH=') + workingDir)
     }
-    options.envPairs.push('PATH=' + p)
 
+    //fs.createWriteStream('/dev/tty').write('SET PATH ' + p + '\n')
+
+    // out.write('\n  env\n   '+options.envPairs.join('\n   ')+'\n')
     return spawn.call(this, options)
   }
 
@@ -188,13 +232,5 @@ function setup (argv, env) {
 function runMain () {
   process.argv.splice(1, 1)
   process.argv[1] = path.resolve(process.argv[1])
-  clearModuleCache()
   Module.runMain()
-}
-
-function clearModuleCache () {
-  // A recipe for memory leaks!  Never ever do this, omg!
-  Object.keys(Module._cache).forEach(function (k) {
-    delete Module._cache[k]
-  })
 }
