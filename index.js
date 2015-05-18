@@ -53,8 +53,6 @@ function wrap (argv, env, workingDir) {
   }
 
   ChildProcess.prototype.spawn = function (options) {
-    // var out = fs.createWriteStream('/dev/tty')
-    // out.write('\nSPAWN ' + options.args.join(' ') + '\n')
     var pathEnv
     var cmdi, c, re, match, exe
 
@@ -63,7 +61,6 @@ function wrap (argv, env, workingDir) {
     // case of doing `exec(process.execPath + ' file.js')
     var file = path.basename(options.file)
     if (file === 'sh' || file === 'bash' || file === 'zsh') {
-      // out.write('\n  shell file\n')
       cmdi = options.args.indexOf('-c')
       if (cmdi !== -1) {
         c = options.args[cmdi + 1]
@@ -77,7 +74,6 @@ function wrap (argv, env, workingDir) {
           }
         }
       }
-      // out.write('\n  shell '+options.args.join(' ')+'\n')
     } else if (isWindows && (
         file === path.basename(process.env.comspec) ||
         file === 'cmd.exe')) {
@@ -95,7 +91,6 @@ function wrap (argv, env, workingDir) {
         }
       }
     } else if (file === 'node' || file === 'iojs') {
-      // out.write('\n  node '+options.args.join(' ')+'\n')
       // make sure it has a main script.
       // otherwise, just let it through.
       var a = 0
@@ -130,7 +125,6 @@ function wrap (argv, env, workingDir) {
       if (hasMain) {
         options.file = workingDir + '/' + file
         options.args[0] = workingDir + '/' + file
-        // out.write('\n  has main '+options.args.join(' ')+'\n')
       }
     }
 
@@ -146,9 +140,6 @@ function wrap (argv, env, workingDir) {
       options.envPairs.push((isWindows ? 'Path=' : 'PATH=') + workingDir)
     }
 
-    //fs.createWriteStream('/dev/tty').write('SET PATH ' + p + '\n')
-
-    // out.write('\n  env\n   '+options.envPairs.join('\n   ')+'\n')
     return spawn.call(this, options)
   }
 
