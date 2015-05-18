@@ -9,6 +9,7 @@ var crypto = require('crypto')
 var mkdirp = require('mkdirp')
 var rimraf = require('rimraf')
 var path = require('path')
+var signalExit = require('signal-exit')
 
 var shim = '#!' + process.execPath + '\n' +
   fs.readFileSync(__dirname + '/shim.js')
@@ -208,7 +209,7 @@ function setup (argv, env) {
   var workingDir = '/tmp/node-spawn-wrap-' + process.pid + '-' +
     crypto.randomBytes(6).toString('hex')
 
-  process.on('exit', function () {
+  signalExit(function () {
     rimraf.sync(workingDir)
   })
 
