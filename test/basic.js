@@ -22,7 +22,7 @@ if (process.argv[2] === 'parent') {
     }
     return arg
   })
-  console.log('WRAP %j', argv)
+  console.log('WRAP %j', process.execArgv.concat(argv))
   sw.runMain()
   return
 }
@@ -105,6 +105,24 @@ t.test('SIGINT', function (t) {
       '[]\n' +
       '["xyz"]\n' +
       'SIGINT\n' +
+      'EXIT [0,null]\n')
+    t.end()
+  })
+})
+
+t.test('--harmony', function (t) {
+  var node = process.execPath
+  var child = cp.spawn(node, ['--harmony', fixture, 'xyz'])
+  var out = ''
+  child.stdout.on('data', function (c) {
+    out += c
+  })
+  child.on('close', function (code, signal) {
+    t.equal(code, 0)
+    t.equal(signal, null)
+    t.equal(out, 'WRAP ["--harmony","{{FIXTURE}}","xyz"]\n' +
+      '["--harmony"]\n' +
+      '["xyz"]\n' +
       'EXIT [0,null]\n')
     t.end()
   })
