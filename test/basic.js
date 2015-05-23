@@ -80,7 +80,7 @@ t.test('SIGHUP', function (t) {
       '[]\n' +
       '["xyz"]\n' +
       'SIGHUP\n' +
-      'EXIT [129,"SIGHUP"]\n')
+      'EXIT [null,"SIGHUP"]\n')
     t.end()
   })
 })

@@ -6,7 +6,7 @@
   "dependencies": {
     "mkdirp": "^0.5.0",
     "rimraf": "^2.3.3",
-    "signal-exit": "^1.1.0"
+    "signal-exit": "^2.0.0"
   },
   "scripts": {
     "test": "tap test/*.js"
@@ -20,5 +20,8 @@
   "bugs": {
     "url": "https://github.com/isaacs/spawn-wrap/issues"
   },
-  "homepage": "https://github.com/isaacs/spawn-wrap#readme"
+  "homepage": "https://github.com/isaacs/spawn-wrap#readme",
+  "devDependencies": {
+    "tap": "^1.1.0"
+  }
 }
