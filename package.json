@@ -4,7 +4,7 @@
   "description": "Wrap all spawned Node.js child processes by adding environs and arguments ahead of the main JavaScript file argument.",
   "main": "index.js",
   "dependencies": {
-    "foreground-child": "^1.1.0",
+    "foreground-child": "^1.2.0",
     "mkdirp": "^0.5.0",
     "rimraf": "^2.3.3",
     "signal-exit": "^2.0.0"
