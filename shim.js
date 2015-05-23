@@ -17,8 +17,10 @@ if (module !== require.main) {
 var Module = require('module')
 var assert = require('assert')
 var path = require('path')
+var node = process.execPath
 
 var settings = require('./settings.json')
+var foregroundChild = require(settings.deps.foregroundChild)
 var argv = settings.argv
 var nargs = argv.length
 var env = settings.env
@@ -85,18 +87,8 @@ if (hasMain > 2) {
 
 if (!hasMain) {
   // we got loaded by mistake for a `node -pe script` or something.
-  var child = require('child_process').spawn(
-    process.execPath,
-    process.execArgv.concat(needExecArgv, process.argv.slice(2)),
-    { stdio: 'inherit' }
-  )
-  child.on('close', function (code, signal) {
-    if (signal) {
-      process.kill(process.pid, signal)
-    } else {
-      process.exit(code)
-    }
-  })
+  var args = process.execArgv.concat(needExecArgv, process.argv.slice(2))
+  foregroundChild(node, args)
   return
 }
 
@@ -108,16 +100,8 @@ if (needExecArgv.length) {
   var pexec = process.execArgv
   if (JSON.stringify(pexec) !== JSON.stringify(needExecArgv)) {
     var spawn = require('child_process').spawn
-    var node = process.execPath
     var sargs = pexec.concat(needExecArgv).concat(process.argv.slice(1))
-    var child = spawn(node, sargs, { stdio: 'inherit' })
-    child.on('close', function (code, signal) {
-      if (signal) {
-        process.kill(process.pid, signal)
-      } else {
-        process.exit(code)
-      }
-    })
+    foregroundChild(node, sargs)
     return
   }
 }
@@ -127,7 +111,6 @@ if (needExecArgv.length) {
 // argv[2].  Splice this shim off the list so it looks like the main.
 var spliceArgs = [1, 1].concat(argv)
 process.argv.splice.apply(process.argv, spliceArgs)
-
 
 // Unwrap the PATH environment var so that we're not mucking
 // with the environment.  It'll get re-added if they spawn anything

@@ -191,6 +191,10 @@ function setup (argv, env) {
 
   var settings = JSON.stringify({
     module: __filename,
+    deps: {
+      foregroundChild: require.resolve('foreground-child'),
+      signalExit: require.resolve('signal-exit'),
+    },
     argv: argv,
     execArgv: execArgv,
     env: env,
