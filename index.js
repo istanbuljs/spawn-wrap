@@ -3,7 +3,7 @@ wrap.runMain = runMain
 
 var Module = require('module')
 var fs = require('fs')
-var ChildProcess
+var ChildProcess = require('child-process-ctor')()
 var assert = require('assert')
 var crypto = require('crypto')
 var mkdirp = require('mkdirp')
@@ -30,13 +30,6 @@ if (process.platform === 'win32' ||
 var colon = isWindows ? ';' : ':'
 
 function wrap (argv, env, workingDir) {
-  if (!ChildProcess) {
-    // sure would be nice if the class were exposed...
-    var child = require('child_process').spawn(process.execPath, [])
-    ChildProcess = child.constructor
-    child.kill('SIGKILL')
-  }
-
   // if we're passed in the working dir, then it means that setup
   // was already done, so no need.
   var doSetup = !workingDir
