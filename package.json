@@ -6,6 +6,7 @@
   "dependencies": {
     "foreground-child": "^1.2.0",
     "mkdirp": "^0.5.0",
+    "os-homedir": "^1.0.1",
     "rimraf": "^2.3.3",
     "signal-exit": "^2.0.0"
   },

@@ -10,6 +10,7 @@ var mkdirp = require('mkdirp')
 var rimraf = require('rimraf')
 var path = require('path')
 var signalExit = require('signal-exit')
+var homedir = require('os-homedir')() + '/.node-spawn-wrap-'
 
 var shim = '#!' + process.execPath + '\n' +
   fs.readFileSync(__dirname + '/shim.js')
@@ -201,7 +202,7 @@ function setup (argv, env) {
     root: process.pid
   }, null, 2) + '\n'
 
-  var workingDir = '/tmp/node-spawn-wrap-' + process.pid + '-' +
+  var workingDir = homedir + process.pid + '-' +
     crypto.randomBytes(6).toString('hex')
 
   signalExit(function () {
