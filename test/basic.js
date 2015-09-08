@@ -54,9 +54,8 @@ t.test('spawn execPath', function (t) {
   })
 })
 
-if (!isWindows)
 t.test('exec shebang', function (t) {
-  var child = cp.exec(fixture + ' xyz')
+  var child = spawn(fixture, ['xyz'])
 
   var out = ''
   child.stdout.on('data', function (c) {
@@ -117,6 +116,7 @@ t.test('SIGINT', function (t) {
   })
 })
 
+if (!isWindows)
 t.test('--harmony', function (t) {
   var node = process.execPath
   var child = spawn(node, ['--harmony', fixture, 'xyz'])
