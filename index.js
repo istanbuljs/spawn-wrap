@@ -11,6 +11,7 @@ var rimraf = require('rimraf')
 var path = require('path')
 var signalExit = require('signal-exit')
 var homedir = require('os-homedir')() + '/.node-spawn-wrap-'
+var winRebase = require('./lib/win-rebase')
 
 var pieces = process.execPath.split(path.sep)
 var cmdname = pieces[pieces.length - 1]
@@ -18,18 +19,10 @@ var cmdname = pieces[pieces.length - 1]
 var shim = '#!' + process.execPath + '\n' +
   fs.readFileSync(__dirname + '/shim.js')
 
-var cmdShim = 'SETLOCAL\r\n' +
-  'SET PATHEXT=%PATHEXT:;.JS;=;%\r\n' +
-  process.execPath + ' "%~dp0\\.\\node" %*\r\n'
+var isWindows = require('./lib/is-windows')()
 
-var isWindows = false
 var pathRe = /^PATH=/
-if (process.platform === 'win32' ||
-  process.env.OSTYPE === 'cygwin' ||
-  process.env.OSTYPE === 'msys') {
-  pathRe = /^PATH=/i
-  isWindows = true
-}
+if (isWindows) pathRe = /^PATH=/i
 
 var colon = isWindows ? ';' : ':'
 
@@ -80,19 +73,12 @@ function wrap (argv, env, workingDir) {
       }
     } else if (isWindows && (
         file === path.basename(process.env.comspec) ||
-        file === 'cmd.exe')) {
+        file === 'cmd.exe' ||
+        file === 'cmd'
+      )) {
       cmdi = options.args.indexOf('/c')
       if (cmdi !== -1) {
-        c = options.args[cmdi + 1]
-        re = new RegExp('^\\s*"([^\\s]*(?:node|iojs)) ')
-        match = c.match(re)
-        if (match) {
-          exe = path.basename(match[1]).replace(/\.exe$/, '')
-          if (exe === 'node' || exe === 'iojs' || exe === cmdname) {
-            c = c.replace(re, exe + ' ')
-            options.args[cmdi + 1] = c
-          }
-        }
+        options.args[cmdi + 1] = winRebase(options.args[cmdi + 1], workingDir + '/node.cmd')
       }
     } else if (file === 'node' || file === 'iojs' || cmdname === file) {
       // make sure it has a main script.
@@ -215,6 +201,12 @@ function setup (argv, env) {
   mkdirp.sync(workingDir)
   workingDir = fs.realpathSync(workingDir)
   if (isWindows) {
+    var cmdShim =
+      '@echo off\r\n'
+      'SETLOCAL\r\n' +
+      'SET PATHEXT=%PATHEXT:;.JS;=;%\r\n' +
+      '"' + process.execPath + '"' + ' "%~dp0\\.\\node" %*\r\n'
+
     fs.writeFileSync(workingDir + '/node.cmd', cmdShim)
     fs.chmodSync(workingDir + '/node.cmd', '0755')
     fs.writeFileSync(workingDir + '/iojs.cmd', cmdShim)
