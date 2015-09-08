@@ -202,7 +202,7 @@ function setup (argv, env) {
   workingDir = fs.realpathSync(workingDir)
   if (isWindows) {
     var cmdShim =
-      '@echo off\r\n'
+      '@echo off\r\n' +
       'SETLOCAL\r\n' +
       'SET PATHEXT=%PATHEXT:;.JS;=;%\r\n' +
       '"' + process.execPath + '"' + ' "%~dp0\\.\\node" %*\r\n'
