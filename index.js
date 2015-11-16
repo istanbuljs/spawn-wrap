@@ -12,6 +12,9 @@ var path = require('path')
 var signalExit = require('signal-exit')
 var homedir = require('os-homedir')() + '/.node-spawn-wrap-'
 
+var pieces = process.execPath.split(path.sep)
+var cmdname = pieces[pieces.length - 1]
+
 var shim = '#!' + process.execPath + '\n' +
   fs.readFileSync(__dirname + '/shim.js')
 
@@ -85,13 +88,13 @@ function wrap (argv, env, workingDir) {
         match = c.match(re)
         if (match) {
           exe = path.basename(match[1]).replace(/\.exe$/, '')
-          if (exe === 'node' || exe === 'iojs') {
+          if (exe === 'node' || exe === 'iojs' || exe === cmdname) {
             c = c.replace(re, exe + ' ')
             options.args[cmdi + 1] = c
           }
         }
       }
-    } else if (file === 'node' || file === 'iojs') {
+    } else if (file === 'node' || file === 'iojs' || cmdname === file) {
       // make sure it has a main script.
       // otherwise, just let it through.
       var a = 0
@@ -221,6 +224,10 @@ function setup (argv, env) {
   fs.chmodSync(workingDir + '/node', '0755')
   fs.writeFileSync(workingDir + '/iojs', shim)
   fs.chmodSync(workingDir + '/iojs', '0755')
+  if (cmdname !== 'iojs' && cmdname !== 'node') {
+    fs.writeFileSync(workingDir + '/' + cmdname, shim)
+    fs.chmodSync(workingDir + '/' + cmdname, '0755')
+  }
   fs.writeFileSync(workingDir + '/settings.json', settings)
 
   return workingDir

@@ -3,6 +3,8 @@ var onExit = require('signal-exit')
 
 var cp = require('child_process')
 var fixture = require.resolve('./fixtures/script.js')
+var fs = require('fs')
+var path = require('path')
 
 if (process.argv[2] === 'parent') {
   // hang up once
@@ -125,6 +127,31 @@ t.test('--harmony', function (t) {
       '["xyz"]\n' +
       'EXIT [0,null]\n')
     t.end()
+  })
+})
+
+t.test('node exe with different name', function(t) {
+  var fp = path.join(__dirname, 'fixtures', 'exething')
+  fs.createReadStream(process.execPath)
+    .pipe(fs.createWriteStream(fp))
+    .on('finish', function() {
+      fs.chmodSync(fp, '0775')
+      var child = cp.spawn(process.execPath, [fixture, 'xyz'])
+
+      var out = ''
+      child.stdout.on('data', function (c) {
+        out += c
+      })
+      child.on('close', function (code, signal) {
+        t.equal(code, 0)
+        t.equal(signal, null)
+        t.equal(out, expect)
+        t.end()
+      })
+    })
+
+  t.on('end', function() {
+    fs.unlinkSync(fp)
   })
 })
 
