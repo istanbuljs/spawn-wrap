@@ -132,26 +132,21 @@ t.test('--harmony', function (t) {
 
 t.test('node exe with different name', function(t) {
   var fp = path.join(__dirname, 'fixtures', 'exething')
-  fs.createReadStream(process.execPath)
-    .pipe(fs.createWriteStream(fp))
-    .on('finish', function() {
-      fs.chmodSync(fp, '0775')
-      var child = cp.spawn(process.execPath, [fixture, 'xyz'])
+  var data = fs.readFileSync(process.execPath)
+  fs.writeFileSync(fp, data)
+  fs.chmodSync(fp, '0775')
+  var child = cp.spawn(process.execPath, [fixture, 'xyz'])
 
-      var out = ''
-      child.stdout.on('data', function (c) {
-        out += c
-      })
-      child.on('close', function (code, signal) {
-        t.equal(code, 0)
-        t.equal(signal, null)
-        t.equal(out, expect)
-        t.end()
-      })
-    })
-
-  t.on('end', function() {
+  var out = ''
+  child.stdout.on('data', function (c) {
+    out += c
+  })
+  child.on('close', function (code, signal) {
+    t.equal(code, 0)
+    t.equal(signal, null)
+    t.equal(out, expect)
     fs.unlinkSync(fp)
+    t.end()
   })
 })
 
