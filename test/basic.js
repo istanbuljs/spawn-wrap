@@ -131,7 +131,7 @@ t.test('--harmony', function (t) {
 })
 
 t.test('node exe with different name', function(t) {
-  var fp = path.join(__dirname, 'fixtures', 'exething')
+  var fp = path.join(__dirname, 'fixtures', 'exething.exe')
   var data = fs.readFileSync(process.execPath)
   fs.writeFileSync(fp, data)
   fs.chmodSync(fp, '0775')
