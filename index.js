@@ -3,7 +3,8 @@ wrap.runMain = runMain
 
 var Module = require('module')
 var fs = require('fs')
-var ChildProcess
+var cp = require('child_process')
+var ChildProcess = cp.ChildProcess
 var assert = require('assert')
 var crypto = require('crypto')
 var mkdirp = require('mkdirp')
@@ -27,8 +28,7 @@ var colon = isWindows ? ';' : ':'
 
 function wrap (argv, env, workingDir) {
   if (!ChildProcess) {
-    // sure would be nice if the class were exposed...
-    var child = require('child_process').spawn(process.execPath, [])
+    var child = cp.spawn(process.execPath, [])
     ChildProcess = child.constructor
     child.kill('SIGKILL')
   }
