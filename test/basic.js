@@ -115,7 +115,6 @@ t.test('SIGINT', function (t) {
   })
 })
 
-if (!isWindows)
 t.test('--harmony', function (t) {
   var node = process.execPath
   var child = spawn(node, ['--harmony', fixture, 'xyz'])
