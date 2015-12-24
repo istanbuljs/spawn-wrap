@@ -1,7 +1,6 @@
 var sw = require('../')
 var onExit = require('signal-exit')
 
-var cp = require('child_process')
 var isWindows = require('../lib/is-windows')()
 var spawn = require('win-spawn')
 var fixture = require.resolve('./fixtures/script.js')
@@ -71,7 +70,7 @@ t.test('exec shebang', function (t) {
 
 if (!isWindows)
 t.test('SIGHUP', function (t) {
-  var child = cp.exec(fixture + ' xyz')
+  var child = spawn(fixture, ['xyz'])
 
   var out = ''
   child.stdout.on('data', function (c) {
@@ -92,7 +91,7 @@ t.test('SIGHUP', function (t) {
 
 if (!isWindows)
 t.test('SIGINT', function (t) {
-  var child = cp.exec(fixture + ' xyz')
+  var child = spawn(fixture, ['xyz'])
 
   var out = ''
   child.stdout.on('data', function (c) {
@@ -140,7 +139,7 @@ t.test('node exe with different name', function(t) {
   var data = fs.readFileSync(process.execPath)
   fs.writeFileSync(fp, data)
   fs.chmodSync(fp, '0775')
-  var child = cp.spawn(process.execPath, [fixture, 'xyz'])
+  var child = spawn(process.execPath, [fixture, 'xyz'])
 
   var out = ''
   child.stdout.on('data', function (c) {
