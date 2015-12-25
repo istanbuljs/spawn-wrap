@@ -1,7 +1,6 @@
 var sw = require('../')
 var onExit = require('signal-exit')
 
-var isWindows = require('../lib/is-windows')()
 var spawn = require('win-spawn')
 var fixture = require.resolve('./fixtures/script.js')
 var fs = require('fs')
@@ -68,7 +67,6 @@ t.test('exec shebang', function (t) {
   })
 })
 
-if (!isWindows)
 t.test('SIGHUP', function (t) {
   var child = spawn(fixture, ['xyz'])
 
@@ -89,7 +87,6 @@ t.test('SIGHUP', function (t) {
   })
 })
 
-if (!isWindows)
 t.test('SIGINT', function (t) {
   var child = spawn(fixture, ['xyz'])
 
