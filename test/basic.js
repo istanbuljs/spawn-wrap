@@ -1,7 +1,7 @@
 var sw = require('../')
 var onExit = require('signal-exit')
 
-var spawn = require('win-spawn')
+var spawn = require('child_process').spawn
 var fixture = require.resolve('./fixtures/script.js')
 var fs = require('fs')
 var path = require('path')
