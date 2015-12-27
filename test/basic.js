@@ -54,6 +54,65 @@ t.test('spawn execPath', function (t) {
   })
 })
 
+t.test('exec execPath', { skip: winNoShebang }, function (t) {
+  var child = cp.exec(process.execPath + ' ' + fixture + ' xyz', { shell: '/bin/bash' })
+
+  var out = ''
+  child.stdout.on('data', function (c) {
+    out += c
+  })
+  child.on('close', function (code, signal) {
+    t.equal(code, 0)
+    t.equal(signal, null)
+    t.equal(out, expect)
+    t.end()
+  })
+})
+
+t.test('exec execPath SIGINT', { skip: winNoShebang }, function (t) {
+  var child = cp.exec(process.execPath + ' ' + fixture + ' xyz', { shell: '/bin/bash' })
+
+  var out = ''
+  child.stdout.on('data', function (c) {
+    out += c
+  })
+  child.stdout.once('data', function () {
+    child.kill('SIGINT')
+  })
+  child.stderr.on('data', function (t) {
+    console.error(t)
+  })
+  child.on('close', function (code, signal) {
+    t.equal(code, 0)
+    t.equal(signal, null)
+    t.equal(out, 'WRAP ["{{FIXTURE}}","xyz"]\n' +
+      '[]\n' +
+      '["xyz"]\n' +
+      'SIGINT\n' +
+      'EXIT [0,null]\n')
+    t.end()
+  })
+})
+
+t.test('exec execPath SIGHUP', { skip: winNoShebang }, function (t) {
+  var child = cp.exec(process.execPath + ' ' + fixture + ' xyz', { shell: '/bin/bash' })
+
+  var out = ''
+  child.stdout.on('data', function (c) {
+    out += c
+    child.kill('SIGHUP')
+  })
+  child.on('close', function (code, signal) {
+    t.equal(signal, 'SIGHUP')
+    t.equal(out, 'WRAP ["{{FIXTURE}}","xyz"]\n' +
+      '[]\n' +
+      '["xyz"]\n' +
+      'SIGHUP\n' +
+      'EXIT [null,"SIGHUP"]\n')
+    t.end()
+  })
+})
+
 t.test('exec shebang', { skip: winNoShebang }, function (t) {
   var child = cp.exec(fixture + ' xyz', { shell: '/bin/bash' })
 
@@ -69,7 +128,7 @@ t.test('exec shebang', { skip: winNoShebang }, function (t) {
   })
 })
 
-t.test('SIGHUP', { skip: winNoShebang }, function (t) {
+t.test('exec shebang SIGHUP', { skip: winNoShebang }, function (t) {
   var child = cp.exec(fixture + ' xyz', { shell: '/bin/bash' })
 
   var out = ''
@@ -88,7 +147,7 @@ t.test('SIGHUP', { skip: winNoShebang }, function (t) {
   })
 })
 
-t.test('SIGINT', { skip: winNoShebang }, function (t) {
+t.test('exec shebang SIGINT', { skip: winNoShebang }, function (t) {
   var child = cp.exec(fixture + ' xyz', { shell: '/bin/bash' })
 
   var out = ''
