@@ -1,6 +1,6 @@
 var sw = require('../')
 var onExit = require('signal-exit')
-
+var codeToSignal = require('code-to-signal')
 var cp = require('child_process')
 var fixture = require.resolve('./fixtures/script.js')
 var fs = require('fs')
@@ -77,7 +77,7 @@ t.test('SIGHUP', function (t) {
     process.kill(pid, 'SIGHUP')
   })
   child.on('close', function (code, signal) {
-    t.equal(code, null)
+    if (process.env.TRAVIS) signal = codeToSignal(code)
     t.equal(signal, 'SIGHUP')
     t.equal(out, 'WRAP ["{{FIXTURE}}","xyz"]\n' +
       '[]\n' +
