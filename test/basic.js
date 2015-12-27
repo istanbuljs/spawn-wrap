@@ -1,6 +1,7 @@
 var sw = require('../')
 var isWindows = require('../lib/is-windows.js')()
 var winNoShebang = isWindows && 'no shebang execution on windows'
+var winNoSig = isWindows && 'no signals get through cmd'
 
 var onExit = require('signal-exit')
 var cp = require('child_process')
@@ -70,9 +71,8 @@ t.test('exec execPath', function (t) {
   })
 })
 
-t.test('exec execPath SIGINT', function (t) {
-  var opt = isWindows ? null : { shell: '/bin/bash' }
-  var child = cp.exec(process.execPath + ' ' + fixture + ' xyz', opt)
+t.test('exec execPath SIGINT', { skip: winNoSig }, function (t) {
+  var child = cp.exec(process.execPath + ' ' + fixture + ' xyz', { shell: '/bin/bash' })
 
   var out = ''
   child.stdout.on('data', function (c) {
@@ -96,9 +96,8 @@ t.test('exec execPath SIGINT', function (t) {
   })
 })
 
-t.test('exec execPath SIGHUP', function (t) {
-  var opt = isWindows ? null : { shell: '/bin/bash' }
-  var child = cp.exec(process.execPath + ' ' + fixture + ' xyz', opt)
+t.test('exec execPath SIGHUP', { skip: winNoSig }, function (t) {
+  var child = cp.exec(process.execPath + ' ' + fixture + ' xyz', { shell: '/bin/bash' })
 
   var out = ''
   child.stdout.on('data', function (c) {
