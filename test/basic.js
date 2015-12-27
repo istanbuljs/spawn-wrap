@@ -103,6 +103,69 @@ t.test('spawn execPath', function (t) {
   })
 })
 
+t.test('spawn node', function (t) {
+  t.plan(3)
+
+  t.test('basic', function (t) {
+    var child = cp.spawn('node', [fixture, 'xyz'])
+
+    var out = ''
+    child.stdout.on('data', function (c) {
+      out += c
+    })
+    child.on('close', function (code, signal) {
+      t.equal(code, 0)
+      t.equal(signal, null)
+      t.equal(out, expect)
+      t.end()
+    })
+  })
+
+  t.test('SIGINT', { skip: winNoSig }, function (t) {
+    var child = cp.spawn('node', [fixture, 'xyz'])
+
+    var out = ''
+    child.stdout.on('data', function (c) {
+      out += c
+    })
+    child.stdout.once('data', function () {
+      child.kill('SIGINT')
+    })
+    child.stderr.on('data', function (t) {
+      console.error(t)
+    })
+    child.on('close', function (code, signal) {
+      t.equal(code, 0)
+      t.equal(signal, null)
+      t.equal(out, 'WRAP ["{{FIXTURE}}","xyz"]\n' +
+        '[]\n' +
+        '["xyz"]\n' +
+        'SIGINT\n' +
+        'EXIT [0,null]\n')
+      t.end()
+    })
+  })
+
+  t.test('SIGHUP', { skip: winNoSig }, function (t) {
+    var child = cp.spawn('node', [fixture, 'xyz'])
+
+    var out = ''
+    child.stdout.on('data', function (c) {
+      out += c
+      child.kill('SIGHUP')
+    })
+    child.on('close', function (code, signal) {
+      t.equal(signal, 'SIGHUP')
+      t.equal(out, 'WRAP ["{{FIXTURE}}","xyz"]\n' +
+        '[]\n' +
+        '["xyz"]\n' +
+        'SIGHUP\n' +
+        'EXIT [null,"SIGHUP"]\n')
+      t.end()
+    })
+  })
+})
+
 t.test('exec execPath', function (t) {
   t.plan(3)
 
