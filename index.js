@@ -13,8 +13,7 @@ var signalExit = require('signal-exit')
 var homedir = require('os-homedir')() + '/.node-spawn-wrap-'
 var winRebase = require('./lib/win-rebase')
 
-var pieces = process.execPath.split(path.sep)
-var cmdname = pieces[pieces.length - 1]
+var cmdname = path.basename(process.execPath, '.exe')
 
 var shim = '#!' + process.execPath + '\n' +
   fs.readFileSync(__dirname + '/shim.js')
