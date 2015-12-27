@@ -11,25 +11,17 @@ var rimraf = require('rimraf')
 var path = require('path')
 var signalExit = require('signal-exit')
 var homedir = require('os-homedir')() + '/.node-spawn-wrap-'
+var winRebase = require('./lib/win-rebase')
 
-var pieces = process.execPath.split(path.sep)
-var cmdname = pieces[pieces.length - 1]
+var cmdname = path.basename(process.execPath, '.exe')
 
 var shim = '#!' + process.execPath + '\n' +
   fs.readFileSync(__dirname + '/shim.js')
 
-var cmdShim = 'SETLOCAL\r\n' +
-  'SET PATHEXT=%PATHEXT:;.JS;=;%\r\n' +
-  process.execPath + ' "%~dp0\\.\\node" %*\r\n'
+var isWindows = require('./lib/is-windows')()
 
-var isWindows = false
 var pathRe = /^PATH=/
-if (process.platform === 'win32' ||
-  process.env.OSTYPE === 'cygwin' ||
-  process.env.OSTYPE === 'msys') {
-  pathRe = /^PATH=/i
-  isWindows = true
-}
+if (isWindows) pathRe = /^PATH=/i
 
 var colon = isWindows ? ';' : ':'
 
@@ -63,8 +55,11 @@ function wrap (argv, env, workingDir) {
     // handle case where node/iojs is exec'd
     // this doesn't handle EVERYTHING, but just the most common
     // case of doing `exec(process.execPath + ' file.js')
-    var file = path.basename(options.file)
-    if (file === 'sh' || file === 'bash' || file === 'zsh') {
+    var file = path.basename(options.file, '.exe')
+    if (file === 'dash' ||
+        file === 'sh' ||
+        file === 'bash' ||
+        file === 'zsh') {
       cmdi = options.args.indexOf('-c')
       if (cmdi !== -1) {
         c = options.args[cmdi + 1]
@@ -72,27 +67,21 @@ function wrap (argv, env, workingDir) {
         match = c.match(re)
         if (match) {
           exe = path.basename(match[2])
-          if (exe === 'iojs' || exe === 'node') {
-            c = c.replace(re, '$1' + exe)
+          if (exe === 'iojs' ||
+              exe === 'node' ||
+              exe === cmdname) {
+            c = c.replace(re, '$1 ' + workingDir + '/node')
             options.args[cmdi + 1] = c
           }
         }
       }
     } else if (isWindows && (
         file === path.basename(process.env.comspec) ||
-        file === 'cmd.exe')) {
+        file === 'cmd'
+      )) {
       cmdi = options.args.indexOf('/c')
       if (cmdi !== -1) {
-        c = options.args[cmdi + 1]
-        re = new RegExp('^\\s*"([^\\s]*(?:node|iojs)) ')
-        match = c.match(re)
-        if (match) {
-          exe = path.basename(match[1]).replace(/\.exe$/, '')
-          if (exe === 'node' || exe === 'iojs' || exe === cmdname) {
-            c = c.replace(re, exe + ' ')
-            options.args[cmdi + 1] = c
-          }
-        }
+        options.args[cmdi + 1] = winRebase(options.args[cmdi + 1], workingDir + '/node.cmd')
       }
     } else if (file === 'node' || file === 'iojs' || cmdname === file) {
       // make sure it has a main script.
@@ -144,10 +133,24 @@ function wrap (argv, env, workingDir) {
       options.envPairs.push((isWindows ? 'Path=' : 'PATH=') + workingDir)
     }
 
+    if (isWindows) fixWindowsBins(workingDir, options)
+
     return spawn.call(this, options)
   }
 
   return unwrap
+}
+
+// by default Windows will reference the full
+// path to the node.exe or iojs.exe as the bin,
+// we should instead point spawn() at our .cmd shim.
+function fixWindowsBins (workingDir, options) {
+  var re = /.*\b(node|iojs)(\.exe)?$/
+  if (options.file.match(re)) {
+    options.file = process.execPath
+    var shim = workingDir + '/node'
+    options.args.splice(0, 1, options.file, workingDir + '/node')
+  }
 }
 
 function setup (argv, env) {
@@ -215,6 +218,12 @@ function setup (argv, env) {
   mkdirp.sync(workingDir)
   workingDir = fs.realpathSync(workingDir)
   if (isWindows) {
+    var cmdShim =
+      '@echo off\r\n' +
+      'SETLOCAL\r\n' +
+      'SET PATHEXT=%PATHEXT:;.JS;=;%\r\n' +
+      '"' + process.execPath + '"' + ' "%~dp0\\.\\node" %*\r\n'
+
     fs.writeFileSync(workingDir + '/node.cmd', cmdShim)
     fs.chmodSync(workingDir + '/node.cmd', '0755')
     fs.writeFileSync(workingDir + '/iojs.cmd', cmdShim)
