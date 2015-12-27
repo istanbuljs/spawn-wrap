@@ -56,7 +56,10 @@ function wrap (argv, env, workingDir) {
     // this doesn't handle EVERYTHING, but just the most common
     // case of doing `exec(process.execPath + ' file.js')
     var file = path.basename(options.file, '.exe')
-    if (file === 'sh' || file === 'bash' || file === 'zsh') {
+    if (file === 'dash' ||
+        file === 'sh' ||
+        file === 'bash' ||
+        file === 'zsh') {
       cmdi = options.args.indexOf('-c')
       if (cmdi !== -1) {
         c = options.args[cmdi + 1]
