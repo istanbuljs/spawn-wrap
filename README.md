@@ -50,7 +50,7 @@ process.on('exit', function (code) {
 require('spawn-wrap').runMain()
 ```
 
-## CAVEATS
+## CONTRACTS and CAVEATS
 
 The initial wrap call uses synchronous I/O.  Probably you should not
 be using this script in any production environments anyway.
@@ -58,5 +58,38 @@ be using this script in any production environments anyway.
 Also, this will slow down child process execution by a lot, since
 we're adding a few layers of indirection.
 
-I would not be very surprised to find out that it works on Windows.
-No way to tell for certain, though.
+The contract which this library aims to uphold is:
+
+* Wrapped processes behave identical to their unwrapped counterparts
+  for all intents and purposes.  That means that the wrapper script
+  propagates all signals and exit codes.
+* If you send a signal to the wrapper, the child gets the signal.
+* If the child exits with a numeric status code, then the wrapper
+  exits with that code.
+* If the child dies with a signal, then the wrapper dies with the
+  same signal.
+* If you execute any Node child process, in any of the various ways
+  that such a thing can be done, it will be wrapped.
+* Children of wrapped processes are also wrapped.
+
+(Much of this made possible by
+[foreground-child](http://npm.im/foreground-child).)
+
+There are a few ways situations in which this contract cannot be
+adhered to, despite best efforts:
+
+1. In order to handle cases where `node` is invoked in a shell script,
+   the `PATH` environment variable is modified such that the the shim
+   will be run before the "real" node.  However, since Windows does
+   not allow executing shebang scripts like regular programs, a
+   `node.cmd` file is required.
+2. Signal propagation through `dash` doesn't always work.  So, if you
+   use `child_process.exec()` on systems where `/bin/sh` is actually
+   `dash`, then the process may exit with a status code > 128 rather
+   than indicating that it received a signal.
+3. `cmd.exe` is even stranger with how it propagates and interprets
+   unix signals.  If you want your programs to be portable, then
+   probably you wanna not rely on signals too much.
+4. It *is* possible to escape the wrapping, if you spawn a bash
+   script, and that script modifies the `PATH`, and then calls a
+   specific `node` binary explicitly.
