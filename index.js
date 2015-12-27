@@ -69,8 +69,8 @@ function wrap (argv, env, workingDir) {
           exe = path.basename(match[2])
           if (exe === 'iojs' ||
               exe === 'node' ||
-              match[2] === process.execPath) {
-            c = c.replace(re, '$1' + exe)
+              exe === cmdname) {
+            c = c.replace(re, '$1 ' + workingDir + '/node')
             options.args[cmdi + 1] = c
           }
         }
