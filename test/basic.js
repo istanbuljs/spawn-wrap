@@ -1,7 +1,7 @@
 var sw = require('../')
 var onExit = require('signal-exit')
 
-var spawn = require('child_process').spawn
+var cp = require('child_process')
 var fixture = require.resolve('./fixtures/script.js')
 var fs = require('fs')
 var path = require('path')
@@ -38,7 +38,7 @@ var expect = 'WRAP ["{{FIXTURE}}","xyz"]\n' +
   'EXIT [0,null]\n'
 
 t.test('spawn execPath', function (t) {
-  var child = spawn(process.execPath, [fixture, 'xyz'])
+  var child = cp.spawn(process.execPath, [fixture, 'xyz'])
 
   var out = ''
   child.stdout.on('data', function (c) {
@@ -53,7 +53,7 @@ t.test('spawn execPath', function (t) {
 })
 
 t.test('exec shebang', function (t) {
-  var child = spawn(fixture, ['xyz'])
+  var child = cp.exec(fixture + ' xyz')
 
   var out = ''
   child.stdout.on('data', function (c) {
@@ -68,12 +68,13 @@ t.test('exec shebang', function (t) {
 })
 
 t.test('SIGHUP', function (t) {
-  var child = spawn(fixture, ['xyz'])
+  var child = cp.exec(fixture + ' xyz')
 
   var out = ''
   child.stdout.on('data', function (c) {
+    var pid = process.env.TRAVIS ? child.pid + 1 : child.pid
     out += c
-    child.kill('SIGHUP')
+    process.kill(pid, 'SIGHUP')
   })
   child.on('close', function (code, signal) {
     t.equal(code, null)
@@ -88,14 +89,15 @@ t.test('SIGHUP', function (t) {
 })
 
 t.test('SIGINT', function (t) {
-  var child = spawn(fixture, ['xyz'])
+  var child = cp.exec(fixture + ' xyz')
 
   var out = ''
   child.stdout.on('data', function (c) {
     out += c
   })
   child.stdout.once('data', function () {
-    child.kill('SIGINT')
+    var pid = process.env.TRAVIS ? child.pid + 1 : child.pid
+    process.kill(pid, 'SIGINT')
   })
   child.stderr.on('data', function (t) {
     console.error(t)
@@ -114,7 +116,7 @@ t.test('SIGINT', function (t) {
 
 t.test('--harmony', function (t) {
   var node = process.execPath
-  var child = spawn(node, ['--harmony', fixture, 'xyz'])
+  var child = cp.spawn(node, ['--harmony', fixture, 'xyz'])
   var out = ''
   child.stdout.on('data', function (c) {
     out += c
@@ -135,7 +137,7 @@ t.test('node exe with different name', function(t) {
   var data = fs.readFileSync(process.execPath)
   fs.writeFileSync(fp, data)
   fs.chmodSync(fp, '0775')
-  var child = spawn(process.execPath, [fixture, 'xyz'])
+  var child = cp.spawn(process.execPath, [fixture, 'xyz'])
 
   var out = ''
   child.stdout.on('data', function (c) {
