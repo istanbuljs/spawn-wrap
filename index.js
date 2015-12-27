@@ -145,11 +145,11 @@ function wrap (argv, env, workingDir) {
 // we should instead point spawn() at our .cmd shim.
 function fixWindowsBins (workingDir, options) {
   var re = /.*\b(node|iojs)(\.exe)?$/
-  options.file = options.file.replace(re, workingDir + '/$1.cmd')
-
-  options.args = options.args.map(function (a) {
-    return a.replace(re, workingDir + '/$1.cmd')
-  })
+  if (options.file.match(re)) {
+    options.file = process.execPath
+    var shim = workingDir + '/node'
+    options.args.splice(0, 1, options.file, workingDir + '/node')
+  }
 }
 
 function setup (argv, env) {
