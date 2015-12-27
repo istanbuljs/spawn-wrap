@@ -1,6 +1,8 @@
 var sw = require('../')
+var isWindows = require('../lib/is-windows.js')()
+var winNoShebang = isWindows && 'no shebang execution on windows'
+
 var onExit = require('signal-exit')
-var codeToSignal = require('code-to-signal')
 var cp = require('child_process')
 var fixture = require.resolve('./fixtures/script.js')
 var fs = require('fs')
@@ -52,8 +54,8 @@ t.test('spawn execPath', function (t) {
   })
 })
 
-t.test('exec shebang', function (t) {
-  var child = cp.exec(fixture + ' xyz')
+t.test('exec shebang', { skip: winNoShebang }, function (t) {
+  var child = cp.exec(fixture + ' xyz', { shell: '/bin/bash' })
 
   var out = ''
   child.stdout.on('data', function (c) {
@@ -67,8 +69,8 @@ t.test('exec shebang', function (t) {
   })
 })
 
-t.test('SIGHUP', function (t) {
-  var child = cp.exec(fixture + ' xyz')
+t.test('SIGHUP', { skip: winNoShebang }, function (t) {
+  var child = cp.exec(fixture + ' xyz', { shell: '/bin/bash' })
 
   var out = ''
   child.stdout.on('data', function (c) {
@@ -77,7 +79,6 @@ t.test('SIGHUP', function (t) {
     process.kill(pid, 'SIGHUP')
   })
   child.on('close', function (code, signal) {
-    if (process.env.TRAVIS) signal = codeToSignal(code)
     t.equal(signal, 'SIGHUP')
     t.equal(out, 'WRAP ["{{FIXTURE}}","xyz"]\n' +
       '[]\n' +
@@ -88,8 +89,8 @@ t.test('SIGHUP', function (t) {
   })
 })
 
-t.test('SIGINT', function (t) {
-  var child = cp.exec(fixture + ' xyz')
+t.test('SIGINT', { skip: winNoShebang }, function (t) {
+  var child = cp.exec(fixture + ' xyz', { shell: '/bin/bash' })
 
   var out = ''
   child.stdout.on('data', function (c) {

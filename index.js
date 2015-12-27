@@ -142,16 +142,11 @@ function wrap (argv, env, workingDir) {
 // path to the node.exe or iojs.exe as the bin,
 // we should instead point spawn() at our .cmd shim.
 function fixWindowsBins (workingDir, options) {
-  var renode = new RegExp('.*node\\.exe$')
-  var reiojs = new RegExp('.*iojs\\.exe$')
-
-  options.file = options.file.replace(renode, workingDir + '/node.cmd')
-  options.file = options.file.replace(reiojs, workingDir + '/node.cmd')
+  var re = /.*\b(node|iojs)(\.exe)?$/
+  options.file = options.file.replace(re, workingDir + '/$1.cmd')
 
   options.args = options.args.map(function (a) {
-    a = a.replace(renode, workingDir + '/node.cmd')
-    a = a.replace(reiojs, workingDir + '/node.cmd')
-    return a
+    return a.replace(re, workingDir + '/$1.cmd')
   })
 }
 
