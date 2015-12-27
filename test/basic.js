@@ -74,9 +74,8 @@ t.test('SIGHUP', { skip: winNoShebang }, function (t) {
 
   var out = ''
   child.stdout.on('data', function (c) {
-    var pid = process.env.TRAVIS ? child.pid + 1 : child.pid
     out += c
-    process.kill(pid, 'SIGHUP')
+    child.kill('SIGHUP')
   })
   child.on('close', function (code, signal) {
     t.equal(signal, 'SIGHUP')
@@ -97,8 +96,7 @@ t.test('SIGINT', { skip: winNoShebang }, function (t) {
     out += c
   })
   child.stdout.once('data', function () {
-    var pid = process.env.TRAVIS ? child.pid + 1 : child.pid
-    process.kill(pid, 'SIGINT')
+    child.kill('SIGINT')
   })
   child.stderr.on('data', function (t) {
     console.error(t)
