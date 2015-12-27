@@ -54,8 +54,9 @@ t.test('spawn execPath', function (t) {
   })
 })
 
-t.test('exec execPath', { skip: winNoShebang }, function (t) {
-  var child = cp.exec(process.execPath + ' ' + fixture + ' xyz', { shell: '/bin/bash' })
+t.test('exec execPath', function (t) {
+  var opt = isWindows ? null : { shell: '/bin/bash' }
+  var child = cp.exec(process.execPath + ' ' + fixture + ' xyz', opt)
 
   var out = ''
   child.stdout.on('data', function (c) {
@@ -69,8 +70,9 @@ t.test('exec execPath', { skip: winNoShebang }, function (t) {
   })
 })
 
-t.test('exec execPath SIGINT', { skip: winNoShebang }, function (t) {
-  var child = cp.exec(process.execPath + ' ' + fixture + ' xyz', { shell: '/bin/bash' })
+t.test('exec execPath SIGINT', function (t) {
+  var opt = isWindows ? null : { shell: '/bin/bash' }
+  var child = cp.exec(process.execPath + ' ' + fixture + ' xyz', opt)
 
   var out = ''
   child.stdout.on('data', function (c) {
@@ -94,8 +96,9 @@ t.test('exec execPath SIGINT', { skip: winNoShebang }, function (t) {
   })
 })
 
-t.test('exec execPath SIGHUP', { skip: winNoShebang }, function (t) {
-  var child = cp.exec(process.execPath + ' ' + fixture + ' xyz', { shell: '/bin/bash' })
+t.test('exec execPath SIGHUP', function (t) {
+  var opt = isWindows ? null : { shell: '/bin/bash' }
+  var child = cp.exec(process.execPath + ' ' + fixture + ' xyz', opt)
 
   var out = ''
   child.stdout.on('data', function (c) {
