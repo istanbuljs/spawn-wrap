@@ -77,7 +77,6 @@ function wrap (argv, env, workingDir) {
       }
     } else if (isWindows && (
         file === path.basename(process.env.comspec) ||
-        file === 'cmd.exe' ||
         file === 'cmd'
       )) {
       cmdi = options.args.indexOf('/c')
