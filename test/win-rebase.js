@@ -18,3 +18,15 @@ t.test('replaces node bin and leaves the script being executed', function (t) {
   t.equal(result, 'C:\\foo foo.js')
   t.done()
 })
+
+t.test('handles a quote', function (t) {
+  var result = winRebase('"C:\\Program Files\\nodejs\\node.exe" "foo.js"', 'C:\\foo')
+  t.equal(result, '"C:\\foo" "foo.js"')
+  t.end()
+})
+
+t.test('handles many quotes', function (t) {
+  var result = winRebase('""C:\\Program Files\\nodejs\\node.exe" "foo.js""', 'C:\\foo')
+  t.equal(result, '""C:\\foo" "foo.js""')
+  t.end()
+})
