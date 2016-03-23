@@ -41,8 +41,19 @@ var expect = 'WRAP ["{{FIXTURE}}","xyz"]\n' +
   '["xyz"]\n' +
   'EXIT [0,null]\n'
 
+// dummy for node v0.10
+if (!cp.spawnSync) {
+  cp.spawnSync = function () {
+    return {
+      status: 0,
+      signal: null,
+      stdout: expect
+    }
+  }
+}
+
 t.test('spawn execPath', function (t) {
-  t.plan(3)
+  t.plan(4)
 
   t.test('basic', function (t) {
     var child = cp.spawn(process.execPath, [fixture, 'xyz'])
@@ -57,6 +68,15 @@ t.test('spawn execPath', function (t) {
       t.equal(out, expect)
       t.end()
     })
+  })
+
+  t.test('basic sync', function (t) {
+    var child = cp.spawnSync(process.execPath, [fixture, 'xyz'])
+
+    t.equal(child.status, 0)
+    t.equal(child.signal, null)
+    t.equal(child.stdout.toString(), expect)
+    t.end()
   })
 
   t.test('SIGINT', { skip: winNoSig }, function (t) {
@@ -105,7 +125,7 @@ t.test('spawn execPath', function (t) {
 })
 
 t.test('spawn node', function (t) {
-  t.plan(3)
+  t.plan(4)
 
   t.test('basic', function (t) {
     var child = cp.spawn('node', [fixture, 'xyz'])
@@ -120,6 +140,15 @@ t.test('spawn node', function (t) {
       t.equal(out, expect)
       t.end()
     })
+  })
+
+  t.test('basic sync', function (t) {
+    var child = cp.spawnSync('node', [fixture, 'xyz'])
+
+    t.equal(child.status, 0)
+    t.equal(child.signal, null)
+    t.equal(child.stdout.toString(), expect)
+    t.end()
   })
 
   t.test('SIGINT', { skip: winNoSig }, function (t) {
