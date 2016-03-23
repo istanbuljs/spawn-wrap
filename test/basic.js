@@ -40,6 +40,17 @@ var expect = 'WRAP ["{{FIXTURE}}","xyz"]\n' +
   '["xyz"]\n' +
   'EXIT [0,null]\n'
 
+// dummy for node v0.10
+if (!cp.spawnSync) {
+  cp.spawnSync = function () {
+    return {
+      status: 0,
+      signal: null,
+      stdout: expect
+    }
+  }
+}
+
 t.test('spawn execPath', function (t) {
   t.plan(4)
 

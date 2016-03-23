@@ -34,7 +34,10 @@ function wrap (argv, env, workingDir) {
   }
 
   // spawn_sync available since Node v0.11
-  var spawn_sync_binding = process.binding('spawn_sync')
+  var spawn_sync_binding, spawn_sync
+  try {
+    spawn_sync_binding = process.binding('spawn_sync')
+  } catch (e) { }
 
   // if we're passed in the working dir, then it means that setup
   // was already done, so no need.
@@ -43,17 +46,23 @@ function wrap (argv, env, workingDir) {
     workingDir = setup(argv, env)
   }
   var spawn = ChildProcess.prototype.spawn
-  var spawn_sync = spawn_sync_binding.spawn
+  if (spawn_sync_binding) {
+    spawn_sync = spawn_sync_binding.spawn
+  }
 
   function unwrap () {
     if (doSetup) {
       rimraf.sync(workingDir)
     }
     ChildProcess.prototype.spawn = spawn
-    spawn_sync = spawn_sync_binding.spawn
+    if (spawn_sync_binding) {
+      spawn_sync = spawn_sync_binding.spawn
+    }
   }
 
-  spawn_sync_binding.spawn = wrappedSpawnFunction(spawn_sync, workingDir)
+  if (spawn_sync_binding) {
+    spawn_sync_binding.spawn = wrappedSpawnFunction(spawn_sync, workingDir)
+  }
   ChildProcess.prototype.spawn = wrappedSpawnFunction(spawn, workingDir)
 
   return unwrap
