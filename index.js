@@ -33,6 +33,9 @@ function wrap (argv, env, workingDir) {
     child.kill('SIGKILL')
   }
 
+  // spawn_sync available since Node v0.11
+  var spawn_sync_binding = process.binding('spawn_sync')
+
   // if we're passed in the working dir, then it means that setup
   // was already done, so no need.
   var doSetup = !workingDir
@@ -40,15 +43,24 @@ function wrap (argv, env, workingDir) {
     workingDir = setup(argv, env)
   }
   var spawn = ChildProcess.prototype.spawn
+  var spawn_sync = spawn_sync_binding.spawn
 
   function unwrap () {
     if (doSetup) {
       rimraf.sync(workingDir)
     }
     ChildProcess.prototype.spawn = spawn
+    spawn_sync = spawn_sync_binding.spawn
   }
 
-  ChildProcess.prototype.spawn = function (options) {
+  spawn_sync_binding.spawn = wrappedSpawnFunction(spawn_sync, workingDir)
+  ChildProcess.prototype.spawn = wrappedSpawnFunction(spawn, workingDir)
+
+  return unwrap
+}
+
+function wrappedSpawnFunction (fn, workingDir) {
+    return function (options) {
     var pathEnv
     var cmdi, c, re, match, exe
 
@@ -135,10 +147,8 @@ function wrap (argv, env, workingDir) {
 
     if (isWindows) fixWindowsBins(workingDir, options)
 
-    return spawn.call(this, options)
+    return fn.call(this, options)
   }
-
-  return unwrap
 }
 
 // by default Windows will reference the full
