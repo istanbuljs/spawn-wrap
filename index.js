@@ -72,6 +72,13 @@ function wrap (argv, env, workingDir) {
               exe === cmdname) {
             c = c.replace(re, '$1 ' + workingDir + '/node')
             options.args[cmdi + 1] = c
+          } else if (exe === 'npm' && !isWindows) {
+            var npmPath = whichOrUndefined('npm')
+
+            if (npmPath) {
+              c = c.replace(re, '$1 ' + workingDir + '/node ' + npmPath)
+              options.args[cmdi + 1] = c
+            }
           }
         }
       }
@@ -133,12 +140,31 @@ function wrap (argv, env, workingDir) {
       options.envPairs.push((isWindows ? 'Path=' : 'PATH=') + workingDir)
     }
 
+    if (file === 'npm' && !isWindows) {
+      var npmPath = whichOrUndefined('npm')
+
+      if (npmPath) {
+        options.args[0] = npmPath
+
+        options.file = workingDir + '/node'
+        options.args.unshift(workingDir + '/node')
+      }
+    }
+
     if (isWindows) fixWindowsBins(workingDir, options)
 
     return spawn.call(this, options)
   }
 
   return unwrap
+}
+
+function whichOrUndefined (executable) {
+  var path
+  try {
+    path = which.sync(executable)
+  } catch (er) {}
+  return path
 }
 
 // by default Windows will reference the full
