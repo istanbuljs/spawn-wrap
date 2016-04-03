@@ -12,6 +12,7 @@ var path = require('path')
 var signalExit = require('signal-exit')
 var homedir = require('os-homedir')() + '/.node-spawn-wrap-'
 var winRebase = require('./lib/win-rebase')
+var which = require('which')
 
 var cmdname = path.basename(process.execPath, '.exe')
 
@@ -125,6 +126,27 @@ function wrap (argv, env, workingDir) {
       if (hasMain) {
         options.file = workingDir + '/' + file
         options.args[0] = workingDir + '/' + file
+      }
+
+    } else {
+      try {
+        var resolved = which.sync(options.file)
+      } catch (er) {}
+      if (resolved) {
+        var shebang = fs.readFileSync(resolved, 'utf8')
+        var match = shebang.match(/^#!([^\r\n]+)/)
+        if (match) {
+          var shebangbin = match[1].split(' ')[0]
+          var maybeNode = path.basename(shebangbin)
+          if (maybeNode === 'node' || maybeNode === 'iojs' || cmdname === maybeNode) {
+
+            options.file = shebangbin
+            options.args = [shebangbin, workingDir + '/' + maybeNode]
+              .concat(resolved)
+              .concat(match[1].split(' ').slice(1))
+              .concat(options.args)
+          }
+        }
       }
     }
 
