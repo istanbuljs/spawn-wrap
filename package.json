@@ -13,7 +13,7 @@
     "which": "^1.2.4"
   },
   "scripts": {
-    "test": "tap test/*.js"
+    "test": "tap --timeout=60 test/*.js"
   },
   "repository": {
     "type": "git",
