@@ -312,7 +312,7 @@ t.test('exec shebang', { skip: winNoShebang }, function (t) {
   })
 })
 
-t.test('--harmony', function (t) {
+t.test('--harmony', { skip: winZero10 }, function (t) {
   var node = process.execPath
   var child = cp.spawn(node, ['--harmony', fixture, 'xyz'])
   var out = ''
@@ -330,7 +330,7 @@ t.test('--harmony', function (t) {
   })
 })
 
-t.test('node exe with different name', function(t) {
+t.test('node exe with different name', {skip: winZero10}, function(t) {
   var fp = path.join(__dirname, 'fixtures', 'exething.exe')
   var data = fs.readFileSync(process.execPath)
   fs.writeFileSync(fp, data)
