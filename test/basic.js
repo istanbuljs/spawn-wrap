@@ -172,7 +172,7 @@ t.test('spawn node', function (t) {
 t.test('exec execPath', function (t) {
   t.plan(3)
 
-  t.test('basic', function (t) {
+  t.test('basic', { skip: winZero10 }, function (t) {
     var opt = isWindows ? null : { shell: '/bin/bash' }
     var child = cp.exec(process.execPath + ' ' + fixture + ' xyz', opt)
 
@@ -236,7 +236,7 @@ t.test('exec execPath', function (t) {
 t.test('exec shebang', { skip: winNoShebang }, function (t) {
   t.plan(4)
 
-  t.test('basic', function (t) {
+  t.test('basic', { skip: winZero10 }, function (t) {
     var child = cp.exec(fixture + ' xyz', { shell: '/bin/bash' })
 
     var out = ''
