@@ -6,6 +6,7 @@ var winNoSig = isWindows && 'no signals get through cmd'
 var onExit = require('signal-exit')
 var cp = require('child_process')
 var fixture = require.resolve('./fixtures/script.js')
+var npmFixture = require.resolve('./fixtures/npm')
 var fs = require('fs')
 var path = require('path')
 
@@ -290,6 +291,41 @@ t.test('exec shebang', { skip: winNoShebang }, function (t) {
         'EXIT [0,null]\n')
       t.end()
     })
+  })
+})
+
+// see: https://github.com/bcoe/nyc/issues/190
+t.test('Node 5.8.x + npm 3.7.x - spawn', { skip: winNoShebang }, function (t) {
+  var npmdir = path.dirname(npmFixture)
+  process.env.PATH = npmdir + ':' + (process.env.PATH || '')
+  var child = cp.spawn('npm', ['xyz'])
+
+  var out = ''
+  child.stdout.on('data', function (c) {
+    out += c
+  })
+  child.on('close', function (code, signal) {
+    t.equal(code, 0)
+    t.equal(signal, null)
+    t.true(~out.indexOf('xyz'))
+    t.end()
+  })
+})
+
+t.test('Node 5.8.x + npm 3.7.x - shell', { skip: winNoShebang }, function (t) {
+  var npmdir = path.dirname(npmFixture)
+  process.env.PATH = npmdir + ':' + (process.env.PATH || '')
+  var child = cp.exec('npm xyz')
+
+  var out = ''
+  child.stdout.on('data', function (c) {
+    out += c
+  })
+  child.on('close', function (code, signal) {
+    t.equal(code, 0)
+    t.equal(signal, null)
+    t.true(~out.indexOf('xyz'))
+    t.end()
   })
 })
 
