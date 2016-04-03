@@ -7,6 +7,7 @@ var winNoSig = isWindows && 'no signals get through cmd'
 var onExit = require('signal-exit')
 var cp = require('child_process')
 var fixture = require.resolve('./fixtures/script.js')
+var node58fixture = require.resolve('./fixtures/node-5.8-shebang')
 var fs = require('fs')
 var path = require('path')
 
@@ -23,7 +24,7 @@ if (process.argv[2] === 'parent') {
     console.log('EXIT %j', [code, signal])
   })
   var argv = process.argv.slice(3).map(function (arg) {
-    if (arg === fixture) {
+    if (~[fixture, node58fixture].indexOf(arg)) {
       return '{{FIXTURE}}'
     }
     return arg
@@ -232,7 +233,7 @@ t.test('exec execPath', function (t) {
 })
 
 t.test('exec shebang', { skip: winNoShebang }, function (t) {
-  t.plan(3)
+  t.plan(4)
 
   t.test('basic', function (t) {
     var child = cp.exec(fixture + ' xyz', { shell: '/bin/bash' })
@@ -289,6 +290,21 @@ t.test('exec shebang', { skip: winNoShebang }, function (t) {
         '["xyz"]\n' +
         'SIGINT\n' +
         'EXIT [0,null]\n')
+      t.end()
+    })
+  })
+
+  t.test('Node 5.8.8 - basic', function (t) {
+    var child = cp.exec(node58fixture + ' xyz', { shell: node58fixture })
+
+    var out = ''
+    child.stdout.on('data', function (c) {
+      out += c
+    })
+    child.on('close', function (code, signal) {
+      t.equal(code, 0)
+      t.equal(signal, null)
+      t.true(~out.indexOf('node-5.8-shebang xyz'))
       t.end()
     })
   })

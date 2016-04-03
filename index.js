@@ -3,6 +3,7 @@ wrap.runMain = runMain
 
 var Module = require('module')
 var fs = require('fs')
+var head = require('head')
 var ChildProcess
 var assert = require('assert')
 var crypto = require('crypto')
@@ -12,6 +13,7 @@ var path = require('path')
 var signalExit = require('signal-exit')
 var homedir = require('os-homedir')() + '/.node-spawn-wrap-'
 var winRebase = require('./lib/win-rebase')
+var which = require('which')
 
 var cmdname = path.basename(process.execPath, '.exe')
 
@@ -56,6 +58,7 @@ function wrap (argv, env, workingDir) {
     // this doesn't handle EVERYTHING, but just the most common
     // case of doing `exec(process.execPath + ' file.js')
     var file = path.basename(options.file, '.exe')
+
     if (file === 'dash' ||
         file === 'sh' ||
         file === 'bash' ||
@@ -133,12 +136,43 @@ function wrap (argv, env, workingDir) {
       options.envPairs.push((isWindows ? 'Path=' : 'PATH=') + workingDir)
     }
 
+    fixShebang(options, workingDir)
     if (isWindows) fixWindowsBins(workingDir, options)
 
     return spawn.call(this, options)
   }
 
   return unwrap
+}
+
+// handle special cases of shebang, e.g., the
+// 2>/dev/null; exec "`dirname "$0"`/node" "$0" "$@"
+// approach used in Node 5+.
+function fixShebang (options, workingDir) {
+  if (isWindows) return
+
+  var $0 = options.args[0]
+  if ($0.indexOf('/') === -1) {
+    try {
+      $0 = which.sync(options.args[0])
+    } catch (_err) {
+      // use original.
+    }
+  }
+
+  var shebang = null
+  try {
+    shebang = fs.readFileSync($0, 'utf-8')
+  } catch (_err) {
+    return // there's no shebang.
+  }
+
+  // // 2>/dev/null; exec "`dirname "$0"`/node" "$0" "$@"
+  if (~shebang.indexOf('"`dirname "$0"`/node"')) {
+    var nodeBin = workingDir + '/node'
+    options.file = nodeBin
+    options.args.splice(0, 1, nodeBin, $0)
+  }
 }
 
 // by default Windows will reference the full
