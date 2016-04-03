@@ -147,9 +147,12 @@ function wrap (argv, env, workingDir) {
 
 // handle special cases of shebang, e.g., the
 // 2>/dev/null; exec "`dirname "$0"`/node" "$0" "$@"
-// approach used in Node 5+.
+// approach used in Node 5.8.0.
 function fixShebang (options, workingDir) {
   if (isWindows) return
+  // currently, the only edge-case that we solve
+  // is for Node > v5.8.0.
+  if (/^v0\..*$/.test(process.version)) return
 
   var $0 = options.args[0]
   if ($0.indexOf('/') === -1) {
@@ -162,7 +165,7 @@ function fixShebang (options, workingDir) {
 
   var shebang = null
   try {
-    shebang = fs.readFileSync($0, 'utf-8')
+    shebang = head($0, 500).toString()
   } catch (_err) {
     return // there's no shebang.
   }
