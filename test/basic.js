@@ -8,7 +8,7 @@ var zero10 = /^v0\..*$/.test(process.version) && 'shebang fix is not required fo
 var onExit = require('signal-exit')
 var cp = require('child_process')
 var fixture = require.resolve('./fixtures/script.js')
-var node58fixture = require.resolve('./fixtures/node-5.8-shebang')
+var node58fixture = require.resolve('./fixtures/node-5.8-npm')
 var fs = require('fs')
 var path = require('path')
 
@@ -306,7 +306,7 @@ t.test('exec shebang', { skip: winNoShebang }, function (t) {
     child.on('close', function (code, signal) {
       t.equal(code, 0)
       t.equal(signal, null)
-      t.true(~out.indexOf('node-5.8-shebang xyz'))
+      t.true(~out.indexOf('node-5.8-npm xyz'))
       t.end()
     })
   })

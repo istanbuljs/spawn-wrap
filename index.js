@@ -147,20 +147,20 @@ function wrap (argv, env, workingDir) {
 
 // handle special cases of shebang, e.g., the
 // 2>/dev/null; exec "`dirname "$0"`/node" "$0" "$@"
-// approach used in Node 5.8.0.
+// approach used in Node 5.8.0+ for the npm executable
 function fixShebang (options, workingDir) {
   if (isWindows) return
-  // currently, the only edge-case that we solve
-  // is for Node > v5.8.0.
+  // currently we only handle an edge-case surrounding the
+  // npm bin.
+  if (!/npm$/.test(options.file)) return
+  // this only crops up on newer versions of Node.js.
   if (/^v0\..*$/.test(process.version)) return
 
   var $0 = options.args[0]
-  if ($0.indexOf('/') === -1) {
-    try {
-      $0 = which.sync(options.args[0])
-    } catch (_err) {
-      // use original.
-    }
+  try {
+    $0 = which.sync(options.args[0])
+  } catch (_err) {
+    // use original.
   }
 
   var shebang = null
