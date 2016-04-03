@@ -1,8 +1,9 @@
 var sw = require('../')
 var isWindows = require('../lib/is-windows.js')()
-var isWindowsZero10 = isWindows && /^v0\.10.*$/.test(process.version)
 var winNoShebang = isWindows && 'no shebang execution on windows'
 var winNoSig = isWindows && 'no signals get through cmd'
+var winZero10 = isWindows && /^v0\.10.*$/.test(process.version) && 'fails on Node v0.10.x on windows'
+var zero10 = /^v0\..*$/.test(process.version) && 'shebang fix is not required for v0.10.x'
 
 var onExit = require('signal-exit')
 var cp = require('child_process')
@@ -45,7 +46,7 @@ var expect = 'WRAP ["{{FIXTURE}}","xyz"]\n' +
 t.test('spawn execPath', function (t) {
   t.plan(3)
 
-  t.test('basic', function (t) {
+  t.test('basic', { skip: winZero10 }, function (t) {
     var child = cp.spawn(process.execPath, [fixture, 'xyz'])
 
     var out = ''
@@ -55,7 +56,7 @@ t.test('spawn execPath', function (t) {
     child.on('close', function (code, signal) {
       t.equal(code, 0)
       t.equal(signal, null)
-      if (!isWindowsZero10) t.equal(out, expect)
+      t.equal(out, expect)
       t.end()
     })
   })
@@ -108,7 +109,7 @@ t.test('spawn execPath', function (t) {
 t.test('spawn node', function (t) {
   t.plan(3)
 
-  t.test('basic', function (t) {
+  t.test('basic', { skip: winZero10 }, function (t) {
     var child = cp.spawn('node', [fixture, 'xyz'])
 
     var out = ''
@@ -118,7 +119,7 @@ t.test('spawn node', function (t) {
     child.on('close', function (code, signal) {
       t.equal(code, 0)
       t.equal(signal, null)
-      if (!isWindowsZero10) t.equal(out, expect)
+      t.equal(out, expect)
       t.end()
     })
   })
@@ -294,7 +295,8 @@ t.test('exec shebang', { skip: winNoShebang }, function (t) {
     })
   })
 
-  t.test('Node 5.8.8 - basic', function (t) {
+  // see: https://github.com/bcoe/nyc/issues/190
+  t.test('Node 5.8.x - basic', { skip: zero10 }, function (t) {
     var child = cp.exec(node58fixture + ' xyz', { shell: node58fixture })
 
     var out = ''
