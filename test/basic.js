@@ -1,5 +1,6 @@
 var sw = require('../')
 var isWindows = require('../lib/is-windows.js')()
+var isWindowsZero10 = isWindows && /^v0\.10.*$/.test(process.version)
 var winNoShebang = isWindows && 'no shebang execution on windows'
 var winNoSig = isWindows && 'no signals get through cmd'
 
@@ -53,7 +54,7 @@ t.test('spawn execPath', function (t) {
     child.on('close', function (code, signal) {
       t.equal(code, 0)
       t.equal(signal, null)
-      t.equal(out, expect)
+      if (!isWindowsZero10) t.equal(out, expect)
       t.end()
     })
   })
@@ -116,7 +117,7 @@ t.test('spawn node', function (t) {
     child.on('close', function (code, signal) {
       t.equal(code, 0)
       t.equal(signal, null)
-      t.equal(out, expect)
+      if (!isWindowsZero10) t.equal(out, expect)
       t.end()
     })
   })
