@@ -162,12 +162,11 @@ function wrappedSpawnFunction (fn, workingDir) {
           var shebangbin = match[1].split(' ')[0]
           var maybeNode = path.basename(shebangbin)
           if (maybeNode === 'node' || maybeNode === 'iojs' || cmdname === maybeNode) {
-
-            options.file = shebangbin
+            file = options.file = shebangbin
             options.args = [shebangbin, workingDir + '/' + maybeNode]
               .concat(resolved)
               .concat(match[1].split(' ').slice(1))
-              .concat(options.args)
+              .concat(options.args.slice(1))
           }
         }
       }
