@@ -15,10 +15,10 @@ if (process.platform === 'win32') {
 
 var expect =
   'before in shim\n' +
-  'shebang main\n' +
+  'shebang main foo,bar\n' +
   'after in shim\n' +
   'before in shim\n' +
-  'shebang main\n' +
+  'shebang main foo,bar\n' +
   'after in shim\n'
 
 var fixdir = path.resolve(__dirname, 'fixtures', 'shebangs')
@@ -40,10 +40,11 @@ t.test('env', function (t) {
 })
 
 function runTest (file, shebang, t) {
-  var content = '#!' + shebang + '\nconsole.log("shebang main")\n'
+  var content = '#!' + shebang + '\n' +
+    'console.log("shebang main " + process.argv.slice(2))\n'
   fs.writeFileSync(file, content, 'utf8')
   fs.chmodSync(file, '0755')
-  var child = spawn(node, [wrap, file])
+  var child = spawn(node, [wrap, file, 'foo', 'bar'])
   var out = ''
   var err = ''
   child.stdout.on('data', function (c) {
