@@ -197,11 +197,28 @@ t.test('spawn node', function (t) {
 })
 
 t.test('exec execPath', function (t) {
-  t.plan(3)
+  t.plan(4)
 
   t.test('basic', function (t) {
     var opt = isWindows ? null : { shell: '/bin/bash' }
     var child = cp.exec(process.execPath + ' ' + fixture + ' xyz', opt)
+
+    var out = ''
+    child.stdout.on('data', function (c) {
+      out += c
+    })
+    child.on('close', function (code, signal) {
+      t.equal(code, 0)
+      t.equal(signal, null)
+      t.equal(out, expect)
+      t.end()
+    })
+  })
+
+  t.test('execPath wrapped with quotes', function (t) {
+    var opt = isWindows ? null : { shell: '/bin/bash' }
+    var child = cp.exec(JSON.stringify(process.execPath) + ' ' + fixture +
+      ' xyz', opt)
 
     var out = ''
     child.stdout.on('data', function (c) {

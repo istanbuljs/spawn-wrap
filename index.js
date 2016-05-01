@@ -87,10 +87,17 @@ function wrappedSpawnFunction (fn, workingDir) {
       cmdi = options.args.indexOf('-c')
       if (cmdi !== -1) {
         c = options.args[cmdi + 1]
-        re = /^\s*((?:[^\= ]*\=[^\=\s]*\s*)*)([^\s]+)/
+        re = /^\s*((?:[^\= ]*\=[^\=\s]*\s*)*)([^\s]+|"[^"]+"|'[^']+')/
         match = c.match(re)
         if (match) {
           exe = path.basename(match[2])
+          // Strip a trailing quote from the basename if it matches a
+          // leading quote.
+          var quote = match[2].charAt(0)
+          if ((quote === '"' || quote === '\'') && quote === exe.slice(-1)) {
+            exe = exe.slice(0, -1)
+          }
+
           if (exe === 'iojs' ||
               exe === 'node' ||
               exe === cmdname) {
