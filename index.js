@@ -114,7 +114,7 @@ function wrappedSpawnFunction (fn, workingDir) {
         }
       }
     } else if (isWindows && (
-        file === path.basename(process.env.comspec) ||
+        file === path.basename(process.env.comspec || '') ||
         file === 'cmd'
       )) {
       cmdi = options.args.indexOf('/c')
