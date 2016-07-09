@@ -30,3 +30,11 @@ t.test('handles many quotes', function (t) {
   t.equal(result, '""C:\\foo" "foo.js""')
   t.end()
 })
+
+t.test('handles npm invocations', function (t) {
+  var result = winRebase('""npm" "install""',
+                         'C:\\foo',
+                         function() { return 'C:\\path-to-npm\\npm' })
+  t.equal(result, '""C:\\foo "C:\\path-to-npm\\node_modules\\npm\\bin\\npm-cli.js"" "install""')
+  t.end()
+})

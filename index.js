@@ -119,7 +119,9 @@ function wrappedSpawnFunction (fn, workingDir) {
       )) {
       cmdi = options.args.indexOf('/c')
       if (cmdi !== -1) {
-        options.args[cmdi + 1] = winRebase(options.args[cmdi + 1], workingDir + '/node.cmd')
+        options.args[cmdi + 1] = winRebase(options.args[cmdi + 1],
+                                           workingDir + '/node.cmd',
+                                           whichOrUndefined)
       }
     } else if (file === 'node' || file === 'iojs' || cmdname === file) {
       // make sure it has a main script.
