@@ -9,7 +9,7 @@
     "os-homedir": "^1.0.1",
     "rimraf": "^2.3.3",
     "signal-exit": "^2.0.0",
-    "which": "^1.2.4"
+    "which": "^1.2.11"
   },
   "scripts": {
     "test": "tap test/*.js"
