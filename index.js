@@ -14,8 +14,16 @@ var signalExit = require('signal-exit')
 var homedir = require('os-homedir')() + '/.node-spawn-wrap-'
 var winRebase = require('./lib/win-rebase')
 var which = require('which')
+var util = require('util')
 
 var cmdname = path.basename(process.execPath, '.exe')
+var doDebug = process.env.SPAWN_WRAP_DEBUG === '1'
+var debug = doDebug ? function () {
+  var message = util.format.apply(util, arguments).trim()
+  var pref = 'SW ' + process.pid + ': '
+  message = pref + message.split('\n').join('\n' + pref)
+  process.stderr.write(message + '\n')
+} : function () {}
 
 var shim = '#!' + process.execPath + '\n' +
   fs.readFileSync(__dirname + '/shim.js')
@@ -52,7 +60,7 @@ function wrap (argv, env, workingDir) {
   }
 
   function unwrap () {
-    if (doSetup) {
+    if (doSetup && !doDebug) {
       rimraf.sync(workingDir)
     }
     ChildProcess.prototype.spawn = spawn
@@ -205,6 +213,8 @@ function wrappedSpawnFunction (fn, workingDir) {
     }
 
     if (isWindows) fixWindowsBins(workingDir, options)
+  if (process.env.SPAWN_WRAP_DEBUG === '1')
+    options.envPairs.push('SPAWN_WRAP_DEBUG=1')
 
     return fn.call(this, options)
   }
@@ -289,7 +299,8 @@ function setup (argv, env) {
     crypto.randomBytes(6).toString('hex')
 
   signalExit(function () {
-    rimraf.sync(workingDir)
+    if (!doDebug)
+      rimraf.sync(workingDir)
   })
 
   mkdirp.sync(workingDir)
