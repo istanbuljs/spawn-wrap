@@ -98,7 +98,7 @@ function mungeSh (workingDir, options) {
     return // no -c argument
 
   var c = options.args[cmdi + 1]
-  var re = /^\s*((?:[^\= ]*\=[^\=\s]*)*[\s]*)([^\s]+|"[^"]+"|'[^']+')/
+  var re = /^\s*((?:[^\= ]*\=[^\=\s]*)*[\s]*)([^\s]+|"[^"]+"|'[^']+')( .*)?$/
   var match = c.match(re)
   if (!match)
     return // not a command invocation.  weird but possible
@@ -113,7 +113,7 @@ function mungeSh (workingDir, options) {
 
   if (isNode(exe)) {
     options.originalNode = command
-    c = c.replace(re, '$1"' + workingDir + '/node"')
+    c = match[1] + match[2] + ' "' + workingDir + '/node" ' + match[3]
     options.args[cmdi + 1] = c
   } else if (exe === 'npm' && !isWindows) {
     // XXX this will exhibit weird behavior when using /path/to/npm,
@@ -121,8 +121,9 @@ function mungeSh (workingDir, options) {
     var npmPath = whichOrUndefined('npm')
 
     if (npmPath) {
-      c = c.replace(re, '$1 "' + workingDir + '/node" "' + npmPath + '"')
+      c = c.replace(re, '$1 "' + workingDir + '/node" "' + npmPath + '" $3')
       options.args[cmdi + 1] = c
+      debug('npm munge!', c)
     }
   }
 }
@@ -137,7 +138,7 @@ function mungeCmd (workingDir, options) {
   if (cmdi === -1)
     return
 
-  var re = /^\s*("*)([^"]*?\b(?:node|iojs)(?:\.exe)?)("*)( |$)/
+  var re = /^\s*("*)([^"]*?\b(?:node|iojs)(?:\.exe)?)("*)( .*)?$/
   var npmre = /^\s*("*)([^"]*?\b(?:npm))("*)( |$)/
   var path_ = require('path')
   if (path_.win32)
@@ -152,11 +153,13 @@ function mungeCmd (workingDir, options) {
   if (m) {
     options.originalNode = m[2]
     replace = m[1] + workingDir + '/node.cmd' + m[3] + m[4]
+    options.args[cmdi + 1] = m[1] + m[2] + m[3] +
+      ' "' + workingDir + '\\node"' + m[4]
   } else {
     // XXX probably not a good idea to rewrite to the first npm in the
     // path if it's a full path to npm.  And if it's not a full path to
     // npm, then the dirname will not work properly!
-    m = path.match(npmre)
+    m = command.match(npmre)
     if (!m)
       return
 
@@ -165,8 +168,8 @@ function mungeCmd (workingDir, options) {
     replace = m[1] + workingDir + '/node.cmd' +
               ' "' + npmPath + '"' +
               m[3] + m[4]
+    options.args[cmdi + 1] = command.replace(npmre, replace)
   }
-  options.args[cmdi + 1] = command.replace(npmre, replace)
 }
 
 function isNode (file) {
@@ -210,16 +213,17 @@ function mungeNode (workingDir, options) {
 
   if (hasMain) {
     var replace = workingDir + '/' + command
-
-    options.file = replace
-    options.args[0] = replace
-    if (isWindows) {
-      // On windows, we have to explicitly exec 'node.exe node.js',
-      // because it lacks support for shebangs.
-      options.file = process.execPath
-      options.args = [process.execPath].concat(options.args)
+    options.args.splice(1, 0, replace)
+    // If the file is just something like 'node' then that'll
+    // resolve to our shim, and so to prevent double-shimming, we need
+    // to resolve that here first.
+    if (options.file === options.basename) {
+      var realNode = whichOrUndefined(options.file) || process.execPath
+      options.file = options.args[0] = realNode
     }
   }
+
+  debug('mungeNode after', options.file, options.args)
 }
 
 function mungeShebang (workingDir, options) {
@@ -244,8 +248,8 @@ function mungeShebang (workingDir, options) {
 
   options.originalNode = shebangbin
   options.basename = maybeNode
-  options.file = workingDir + '/' + maybeNode
-  options.args = [workingDir + '/' + maybeNode]
+  options.file = shebangbin
+  options.args = [shebangbin, workingDir + '/' + maybeNode]
     .concat(resolved)
     .concat(match[1].split(' ').slice(1))
     .concat(options.args.slice(1))
@@ -280,6 +284,7 @@ function isnpm (file) {
 }
 
 function mungenpm (workingDir, options) {
+  debug('munge npm')
   // XXX weird effects of replacing a specific npm with a global one
   var npmPath = whichOrUndefined('npm')
 

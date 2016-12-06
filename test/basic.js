@@ -89,9 +89,7 @@ t.test('spawn execPath', function (t) {
     child.stdout.once('data', function () {
       child.kill('SIGINT')
     })
-    child.stderr.on('data', function (t) {
-      console.error(t)
-    })
+    child.stderr.pipe(process.stderr)
     child.on('close', function (code, signal) {
       t.equal(code, 0)
       t.equal(signal, null)
@@ -161,9 +159,7 @@ t.test('spawn node', function (t) {
     child.stdout.once('data', function () {
       child.kill('SIGINT')
     })
-    child.stderr.on('data', function (t) {
-      console.error(t)
-    })
+    child.stderr.pipe(process.stderr)
     child.on('close', function (code, signal) {
       t.equal(code, 0)
       t.equal(signal, null)
@@ -242,9 +238,7 @@ t.test('exec execPath', function (t) {
     child.stdout.once('data', function () {
       child.kill('SIGINT')
     })
-    child.stderr.on('data', function (t) {
-      console.error(t)
-    })
+    child.stderr.pipe(process.stderr)
     child.on('close', function (code, signal) {
       t.equal(code, 0)
       t.equal(signal, null)
@@ -324,9 +318,7 @@ t.test('exec shebang', { skip: winNoShebang }, function (t) {
     child.stdout.once('data', function () {
       child.kill('SIGINT')
     })
-    child.stderr.on('data', function (t) {
-      console.error(t)
-    })
+    child.stderr.pipe(process.stderr)
     child.on('close', function (code, signal) {
       t.equal(code, 0)
       t.equal(signal, null)
@@ -366,6 +358,10 @@ t.test('Node 5.8.x + npm 3.7.x - shell', { skip: winNoShebang }, function (t) {
   var out = ''
   child.stdout.on('data', function (c) {
     out += c
+  })
+  var err = ''
+  child.stderr.on('data', function (c) {
+    err += c
   })
   child.on('close', function (code, signal) {
     t.equal(code, 0)

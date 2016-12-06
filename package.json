@@ -12,7 +12,8 @@
     "which": "^1.2.4"
   },
   "scripts": {
-    "test": "tap test/*.js"
+    "test": "tap test/*.js",
+    "clean": "rm -rf ~/.node-spawn-wrap-*"
   },
   "repository": {
     "type": "git",

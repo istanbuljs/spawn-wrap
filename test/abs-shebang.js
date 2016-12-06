@@ -57,7 +57,6 @@ function runTest (file, shebang, t) {
     t.equal(code, 0)
     t.equal(signal, null)
     t.equal(out, expect)
-    // console.error(err)
     t.end()
   })
 }

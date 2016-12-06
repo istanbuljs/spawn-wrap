@@ -31,21 +31,22 @@ function debug () {
   ttys.write(message + '\n')
 }
 
-debug('shim', process.argv)
+debug('shim', [process.argv[0]].concat(process.execArgv, process.argv.slice(1)))
 
 var Module = require('module')
 var assert = require('assert')
 var path = require('path')
-var node = process.execPath
 
 var settings = require('./settings.json')
 var foregroundChild = require(settings.deps.foregroundChild)
 var argv = settings.argv
 var nargs = argv.length
 var env = settings.env
+var key = settings.key
+var node = process.env['SW_ORIG_' + key] || process.execPath
 
-for (var key in env) {
-  process.env[key] = env[key]
+for (var k in env) {
+  process.env[k] = env[k]
 }
 
 var needExecArgv = settings.execArgv || []
@@ -53,8 +54,10 @@ var needExecArgv = settings.execArgv || []
 // If the user added their OWN wrapper pre-load script, then
 // this will pop that off of the argv, and load the "real" main
 function runMain () {
+  debug('runMain pre', process.argv)
   process.argv.splice(1, nargs)
   process.argv[1] = path.resolve(process.argv[1])
+  debug('runMain post', process.argv)
   Module.runMain()
 }
 
@@ -93,6 +96,7 @@ for (var a = 2; !hasMain && a < process.argv.length; a++) {
       }
   }
 }
+debug('after argv parse hasMain=%j', hasMain)
 
 if (hasMain > 2) {
   // if the main file is above #2, then it means that there
@@ -107,6 +111,7 @@ if (hasMain > 2) {
 if (!hasMain) {
   // we got loaded by mistake for a `node -pe script` or something.
   var args = process.execArgv.concat(needExecArgv, process.argv.slice(2))
+  debug('no main file!', args)
   foregroundChild(node, args)
   return
 }
@@ -118,6 +123,7 @@ if (!hasMain) {
 if (needExecArgv.length) {
   var pexec = process.execArgv
   if (JSON.stringify(pexec) !== JSON.stringify(needExecArgv)) {
+    debug('need execArgv for this', pexec, '=>', needExecArgv)
     var spawn = require('child_process').spawn
     var sargs = pexec.concat(needExecArgv).concat(process.argv.slice(1))
     foregroundChild(node, sargs)
