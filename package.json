@@ -26,6 +26,6 @@
   },
   "homepage": "https://github.com/isaacs/spawn-wrap#readme",
   "devDependencies": {
-    "tap": "^2.3.0"
+    "tap": "^8.0.1"
   }
 }
