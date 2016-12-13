@@ -59,6 +59,7 @@ function runMain () {
   process.argv[1] = path.resolve(process.argv[1])
   debug('runMain post', process.argv)
   Module.runMain()
+  debug('runMain after')
 }
 
 // Argv coming in looks like:
@@ -161,4 +162,5 @@ if (nargs) {
 }
 spawnWrap(argv, env, __dirname)
 
+debug('shim runMain', process.argv)
 Module.runMain()

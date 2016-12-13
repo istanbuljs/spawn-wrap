@@ -351,6 +351,8 @@ function setup (argv, env) {
     env = {}
   }
 
+  debug('setup argv=%j env=%j', argv, env)
+
   // For stuff like --use_strict or --harmony, we need to inject
   // the argument *before* the wrap-main.
   var execArgv = []
