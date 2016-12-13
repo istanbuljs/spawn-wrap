@@ -57,6 +57,7 @@ function runMain () {
   debug('runMain pre', process.argv)
   process.argv.splice(1, nargs)
   process.argv[1] = path.resolve(process.argv[1])
+  delete require.cache[process.argv[1]]
   debug('runMain post', process.argv)
   Module.runMain()
   debug('runMain after')
