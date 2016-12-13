@@ -13,22 +13,22 @@ if (module !== require.main) {
   throw new Error('spawn-wrap: cli wrapper invoked as non-main script')
 }
 
-var ttys
 var util
 var doDebug = process.env.SPAWN_WRAP_DEBUG === '1'
+var fs
 function debug () {
   if (!doDebug)
     return
 
-  if (!ttys) {
-    ttys = require('fs').createWriteStream('/dev/tty')
+  if (!fs) {
+    fs = require('fs')
     util = require('util')
   }
 
   var message = util.format.apply(util, arguments).trim()
   var pref = 'SW ' + process.pid + ': '
   message = pref + message.split('\n').join('\n' + pref)
-  ttys.write(message + '\n')
+  fs.writeSync(2, message + '\n')
 }
 
 debug('shim', [process.argv[0]].concat(process.execArgv, process.argv.slice(1)))
