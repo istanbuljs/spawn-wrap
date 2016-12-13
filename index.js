@@ -63,7 +63,7 @@ function wrap (argv, env, workingDir) {
     }
     ChildProcess.prototype.spawn = spawn
     if (spawnSyncBinding) {
-      spawnSync = spawnSyncBinding.spawn
+      spawnSyncBinding.spawn = spawnSync
     }
   }
 
