@@ -214,13 +214,16 @@ function mungeNode (workingDir, options) {
   if (hasMain) {
     var replace = workingDir + '/' + command
     options.args.splice(1, 0, replace)
-    // If the file is just something like 'node' then that'll
-    // resolve to our shim, and so to prevent double-shimming, we need
-    // to resolve that here first.
-    if (options.file === options.basename) {
-      var realNode = whichOrUndefined(options.file) || process.execPath
-      options.file = options.args[0] = realNode
-    }
+  }
+
+  // If the file is just something like 'node' then that'll
+  // resolve to our shim, and so to prevent double-shimming, we need
+  // to resolve that here first.
+  // This also handles the case where there's not a main file, like
+  // `node -e 'program'`, where we want to avoid the shim entirely.
+  if (options.file === options.basename) {
+    var realNode = whichOrUndefined(options.file) || process.execPath
+    options.file = options.args[0] = realNode
   }
 
   debug('mungeNode after', options.file, options.args)
