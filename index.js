@@ -186,6 +186,7 @@ function mungeNode (workingDir, options) {
   var hasMain = false
   for (var a = 1; !hasMain && a < options.args.length; a++) {
     switch (options.args[a]) {
+      case '-p':
       case '-i':
       case '--interactive':
       case '--eval':

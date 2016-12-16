@@ -78,6 +78,7 @@ for (var a = 2; !hasMain && a < process.argv.length; a++) {
     case '--interactive':
     case '--eval':
     case '-e':
+    case '-p':
     case '-pe':
       hasMain = false
       a = process.argv.length
