@@ -27,5 +27,9 @@
   "homepage": "https://github.com/isaacs/spawn-wrap#readme",
   "devDependencies": {
     "tap": "^8.0.1"
-  }
+  },
+  "files": [
+    "index.js",
+    "shim.js"
+  ]
 }
