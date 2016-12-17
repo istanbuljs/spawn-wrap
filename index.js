@@ -130,7 +130,7 @@ function mungeSh (workingDir, options) {
 
 function isCmd (file) {
   var comspec = path.basename(process.env.comspec || '', '.exe')
-  return isWindows && (file === comspec || /^cmd(\.exe)?$/.match(file))
+  return isWindows && (file === comspec || /^cmd(\.exe)?$/.test(file))
 }
 
 function mungeCmd (workingDir, options) {
