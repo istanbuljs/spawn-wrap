@@ -30,6 +30,7 @@
   },
   "files": [
     "index.js",
-    "shim.js"
+    "shim.js",
+    "lib/is-windows.js"
   ]
 }
