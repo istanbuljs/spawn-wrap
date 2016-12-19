@@ -179,7 +179,7 @@ function isNode (file) {
 
 function mungeNode (workingDir, options) {
   options.originalNode = options.file
-  var command = path.basename(options.file)
+  var command = path.basename(options.file, '.exe')
   // make sure it has a main script.
   // otherwise, just let it through.
   var a = 0
