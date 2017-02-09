@@ -160,9 +160,13 @@ if (isWindows) {
 
 var spawnWrap = require(settings.module)
 if (nargs) {
-  spawnWrap.runMain = runMain
+  spawnWrap.runMain = function (original) { return function () {
+    spawnWrap.runMain = original
+    runMain()
+  }}(spawnWrap.runMain)
 }
 spawnWrap(argv, env, __dirname)
 
 debug('shim runMain', process.argv)
+delete require.cache[process.argv[1]]
 Module.runMain()

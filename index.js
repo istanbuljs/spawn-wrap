@@ -431,5 +431,6 @@ function setup (argv, env) {
 function runMain () {
   process.argv.splice(1, 1)
   process.argv[1] = path.resolve(process.argv[1])
+  delete require.cache[process.argv[1]]
   Module.runMain()
 }
