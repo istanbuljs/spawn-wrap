@@ -150,11 +150,15 @@ function mungeCmd (workingDir, options) {
 
   var m = command.match(re)
   var replace
+  var nodeCmd = workingDir + '/node.cmd'
+  if(workingDir.index(' ') !== -1) {
+    nodeCmd = ' "' + nodeCmd + '"'
+  }
   if (m) {
     options.originalNode = m[2]
     replace = m[1] + workingDir + '/node.cmd' + m[3] + m[4]
     options.args[cmdi + 1] = m[1] + m[2] + m[3] +
-      ' "' + workingDir + '\\node"' + m[4]
+      nodeCmd + m[4]
   } else {
     // XXX probably not a good idea to rewrite to the first npm in the
     // path if it's a full path to npm.  And if it's not a full path to
@@ -165,7 +169,7 @@ function mungeCmd (workingDir, options) {
 
     var npmPath = whichOrUndefined('npm') || 'npm'
     npmPath = path_.dirname(npmPath) + '\\node_modules\\npm\\bin\\npm-cli.js'
-    replace = m[1] + workingDir + '/node.cmd' +
+    replace = m[1] + nodeCmd +
               ' "' + npmPath + '"' +
               m[3] + m[4]
     options.args[cmdi + 1] = command.replace(npmre, replace)
