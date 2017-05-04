@@ -151,7 +151,7 @@ function mungeCmd (workingDir, options) {
   var m = command.match(re)
   var replace
   var nodeCmd = workingDir + '/node.cmd'
-  if(workingDir.index(' ') !== -1) {
+  if(workingDir.indexOf(' ') !== -1) {
     nodeCmd = ' "' + nodeCmd + '"'
   }
   if (m) {
