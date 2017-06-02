@@ -184,6 +184,7 @@ function mungeNode (workingDir, options) {
   // otherwise, just let it through.
   var a = 0
   var hasMain = false
+  var mainIndex = 1
   for (var a = 1; !hasMain && a < options.args.length; a++) {
     switch (options.args[a]) {
       case '-p':
@@ -206,6 +207,7 @@ function mungeNode (workingDir, options) {
           continue
         } else {
           hasMain = true
+          mainIndex = a
           a = options.args.length
           break
         }
@@ -214,7 +216,7 @@ function mungeNode (workingDir, options) {
 
   if (hasMain) {
     var replace = workingDir + '/' + command
-    options.args.splice(1, 0, replace)
+    options.args.splice(mainIndex, 0, replace)
   }
 
   // If the file is just something like 'node' then that'll
