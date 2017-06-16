@@ -179,7 +179,10 @@ function isNode (file) {
 
 function mungeNode (workingDir, options) {
   options.originalNode = options.file
-  var command = path.basename(options.file, '.exe')
+  // Strip a '.exe' extension via a case-insensitive replacement
+  // rather than via the case-sensitive 'ext` parameter to path.basename
+  // because it might be capitalized ('.EXE').
+  var command = path.basename(options.file).replace(/\.exe$/i, '')
   // make sure it has a main script.
   // otherwise, just let it through.
   var a = 0
