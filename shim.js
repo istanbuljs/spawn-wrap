@@ -111,62 +111,67 @@ if (hasMain > 2) {
   needExecArgv.push.apply(needExecArgv, addExecArgv)
 }
 
-if (!hasMain) {
-  // we got loaded by mistake for a `node -pe script` or something.
-  var args = process.execArgv.concat(needExecArgv, process.argv.slice(2))
-  debug('no main file!', args)
-  foregroundChild(node, args)
-  return
-}
-
-// If there are execArgv, and they're not the same as how this module
-// was executed, then we need to inject those.  This is for stuff like
-// --harmony or --use_strict that needs to be *before* the main
-// module.
-if (needExecArgv.length) {
-  var pexec = process.execArgv
-  if (JSON.stringify(pexec) !== JSON.stringify(needExecArgv)) {
-    debug('need execArgv for this', pexec, '=>', needExecArgv)
-    var spawn = require('child_process').spawn
-    var sargs = pexec.concat(needExecArgv).concat(process.argv.slice(1))
-    foregroundChild(node, sargs)
+// allow shim to shirt-circuit in a manner that's compatible
+// with babel-register/standard's linting
+// see: https://github.com/istanbuljs/nyc/issues/599
+(function () {
+  if (!hasMain) {
+    // we got loaded by mistake for a `node -pe script` or something.
+    var args = process.execArgv.concat(needExecArgv, process.argv.slice(2))
+    debug('no main file!', args)
+    foregroundChild(node, args)
     return
   }
-}
 
-// At this point, we've verified that we got the correct execArgv,
-// and that we have a main file, and that the main file is sitting at
-// argv[2].  Splice this shim off the list so it looks like the main.
-var spliceArgs = [1, 1].concat(argv)
-process.argv.splice.apply(process.argv, spliceArgs)
-
-// Unwrap the PATH environment var so that we're not mucking
-// with the environment.  It'll get re-added if they spawn anything
-var isWindows = (
-  process.platform === 'win32' ||
-  process.env.OSTYPE === 'cygwin' ||
-  process.env.OSTYPE === 'msys'
-)
-
-if (isWindows) {
-  for (var i in process.env) {
-    if (i.match(/^path$/i)) {
-      process.env[i] = process.env[i].replace(__dirname + ';', '')
+  // If there are execArgv, and they're not the same as how this module
+  // was executed, then we need to inject those.  This is for stuff like
+  // --harmony or --use_strict that needs to be *before* the main
+  // module.
+  if (needExecArgv.length) {
+    var pexec = process.execArgv
+    if (JSON.stringify(pexec) !== JSON.stringify(needExecArgv)) {
+      debug('need execArgv for this', pexec, '=>', needExecArgv)
+      var spawn = require('child_process').spawn
+      var sargs = pexec.concat(needExecArgv).concat(process.argv.slice(1))
+      foregroundChild(node, sargs)
+      return
     }
   }
-} else {
-  process.env.PATH = process.env.PATH.replace(__dirname + ':', '')
-}
 
-var spawnWrap = require(settings.module)
-if (nargs) {
-  spawnWrap.runMain = function (original) { return function () {
-    spawnWrap.runMain = original
-    runMain()
-  }}(spawnWrap.runMain)
-}
-spawnWrap(argv, env, __dirname)
+  // At this point, we've verified that we got the correct execArgv,
+  // and that we have a main file, and that the main file is sitting at
+  // argv[2].  Splice this shim off the list so it looks like the main.
+  var spliceArgs = [1, 1].concat(argv)
+  process.argv.splice.apply(process.argv, spliceArgs)
 
-debug('shim runMain', process.argv)
-delete require.cache[process.argv[1]]
-Module.runMain()
+  // Unwrap the PATH environment var so that we're not mucking
+  // with the environment.  It'll get re-added if they spawn anything
+  var isWindows = (
+    process.platform === 'win32' ||
+    process.env.OSTYPE === 'cygwin' ||
+    process.env.OSTYPE === 'msys'
+  )
+
+  if (isWindows) {
+    for (var i in process.env) {
+      if (i.match(/^path$/i)) {
+        process.env[i] = process.env[i].replace(__dirname + ';', '')
+      }
+    }
+  } else {
+    process.env.PATH = process.env.PATH.replace(__dirname + ':', '')
+  }
+
+  var spawnWrap = require(settings.module)
+  if (nargs) {
+    spawnWrap.runMain = function (original) { return function () {
+      spawnWrap.runMain = original
+      runMain()
+    }}(spawnWrap.runMain)
+  }
+  spawnWrap(argv, env, __dirname)
+
+  debug('shim runMain', process.argv)
+  delete require.cache[process.argv[1]]
+  Module.runMain()
+})()
