@@ -1,3 +1,5 @@
+'use strict'
+
 // This module should *only* be loaded as a main script
 // by child processes wrapped by spawn-wrap.  It sets up
 // argv to include the injected argv (including the user's
@@ -8,6 +10,9 @@
 // around through all the child procs), then we also set up
 // a require('spawn-wrap').runMain() function that will strip
 // off the injected arguments and run the main file.
+
+// wrap in iife for babylon to handle module-level return
+;(function () {
 
 if (module !== require.main) {
   throw new Error('spawn-wrap: cli wrapper invoked as non-main script')
@@ -170,3 +175,6 @@ spawnWrap(argv, env, __dirname)
 debug('shim runMain', process.argv)
 delete require.cache[process.argv[1]]
 Module.runMain()
+
+// end iife wrapper for babylon
+})()
