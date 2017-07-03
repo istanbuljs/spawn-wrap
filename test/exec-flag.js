@@ -1,4 +1,5 @@
 var sw = require('../')
+var isWindows = require('../lib/is-windows.js')()
 
 if (process.argv[2] === 'wrapper') {
   // note: this should never happen,
@@ -34,10 +35,14 @@ t.test('wrap a -e invocation', function (t) {
           code: code,
           signal: signal
         }
+        // Per <https://nodejs.org/api/process.html>, "Sending SIGINT,
+        // SIGTERM, and SIGKILL cause the unconditional termination
+        // of the target process."  So Node ignores our SIGTERM handler,
+        // and the process ends when killed with that signal.
         var expect = {
-          out: /^(wtf\n)*ignore!\n(wtf\n)*$/,
+          out: isWindows ? /^(wtf\n)*$/ : /^(wtf\n)*ignore!\n(wtf\n)*$/,
           code: null,
-          signal: 'SIGKILL'
+          signal: isWindows ? 'SIGTERM' : 'SIGKILL'
         }
         t.match(actual, expect)
         t.end()
