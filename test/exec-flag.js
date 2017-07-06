@@ -14,40 +14,28 @@ var nodes = [ 'node', process.execPath ]
 
 sw([__filename, 'wrapper'])
 
-t.test('wrap a -e invocation', function (t) {
+t.test('try to wrap a -e invocation but it isnt wrapped', function (t) {
   nodes.forEach(function (node) {
     t.test(node, function (t) {
-      var script = [
-        "process.on('SIGTERM', function() { console.log('ignore!') })",
-        "setInterval(function() {",
-        "  console.log('wtf')",
-        "}, 40)"
-      ].join('\n')
+      var script = "console.log('hello')\n"
       var child = spawn(node, ['-e', script])
       var out = ''
       child.stdout.on('data', function (c) { out += c })
       child.stderr.on('data', function (c) { process.stderr.write(c) })
       child.on('close', function (code, signal) {
-        clearTimeout(timer)
         var actual = {
           out: out,
           code: code,
           signal: signal
         }
         var expect = {
-          out: /^(wtf\n)*ignore!\n(wtf\n)*$/,
-          code: null,
-          signal: 'SIGKILL'
+          out: 'hello\n',
+          code: 0,
+          signal: null
         }
         t.match(actual, expect)
         t.end()
       })
-      var timer= setTimeout(function () {
-        child.kill('SIGTERM')
-        timer = setTimeout(function () {
-          child.kill('SIGKILL')
-        }, 150)
-      }, 150)
     })
   })
   t.end()

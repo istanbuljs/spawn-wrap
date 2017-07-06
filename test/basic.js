@@ -197,7 +197,7 @@ t.test('exec execPath', function (t) {
 
   t.test('basic', function (t) {
     var opt = isWindows ? null : { shell: '/bin/bash' }
-    var child = cp.exec(process.execPath + ' ' + fixture + ' xyz', opt)
+    var child = cp.exec('"' + process.execPath + '" "' + fixture + '" xyz', opt)
 
     var out = ''
     child.stdout.on('data', function (c) {
