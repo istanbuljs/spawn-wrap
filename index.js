@@ -129,8 +129,8 @@ function mungeSh (workingDir, options) {
 }
 
 function isCmd (file) {
-  var comspec = path.basename(process.env.comspec || '', '.exe')
-  return isWindows && (file === comspec || /^cmd(\.exe)?$/.test(file))
+  var comspec = path.basename(process.env.comspec || '').replace(/\.exe$/i, '')
+  return isWindows && (file === comspec || /^cmd(\.exe|\.EXE)?$/.test(file))
 }
 
 function mungeCmd (workingDir, options) {
@@ -138,7 +138,7 @@ function mungeCmd (workingDir, options) {
   if (cmdi === -1)
     return
 
-  var re = /^\s*("*)([^"]*?\b(?:node|iojs)(?:\.exe)?)("*)( .*)?$/
+  var re = /^\s*("*)([^"]*?\b(?:node|iojs)(?:\.exe|\.EXE)?)("*)( .*)?$/
   var npmre = /^\s*("*)([^"]*?\b(?:npm))("*)( |$)/
   var path_ = require('path')
   if (path_.win32)
@@ -173,13 +173,13 @@ function mungeCmd (workingDir, options) {
 }
 
 function isNode (file) {
-  var cmdname = path.basename(process.execPath, '.exe')
+  var cmdname = path.basename(process.execPath).replace(/\.exe$/i, '')
   return file === 'node' || file === 'iojs' || cmdname === file
 }
 
 function mungeNode (workingDir, options) {
   options.originalNode = options.file
-  var command = path.basename(options.file, '.exe')
+  var command = path.basename(options.file).replace(/\.exe$/i, '')
   // make sure it has a main script.
   // otherwise, just let it through.
   var a = 0
@@ -303,7 +303,7 @@ function mungenpm (workingDir, options) {
 }
 
 function munge (workingDir, options) {
-  options.basename = path.basename(options.file, '.exe')
+  options.basename = path.basename(options.file).replace(/\.exe$/i, '')
 
   // XXX: dry this
   if (isSh(options.basename)) {
@@ -420,7 +420,7 @@ function setup (argv, env) {
   fs.chmodSync(workingDir + '/node', '0755')
   fs.writeFileSync(workingDir + '/iojs', shim)
   fs.chmodSync(workingDir + '/iojs', '0755')
-  var cmdname = path.basename(process.execPath, '.exe')
+  var cmdname = path.basename(process.execPath).replace(/\.exe$/i, '')
   if (cmdname !== 'iojs' && cmdname !== 'node') {
     fs.writeFileSync(workingDir + '/' + cmdname, shim)
     fs.chmodSync(workingDir + '/' + cmdname, '0755')
