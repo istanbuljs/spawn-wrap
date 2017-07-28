@@ -23,7 +23,11 @@ var debug = doDebug ? function () {
   process.stderr.write(message + '\n')
 } : function () {}
 
-var shim = '#!' + process.execPath + '\n' +
+if (process.platform === 'os390')
+  shebang = '#!/bin/env '
+else
+  shebang = '#!'
+var shim = shebang + process.execPath + '\n' +
   fs.readFileSync(__dirname + '/shim.js')
 
 var isWindows = require('./lib/is-windows')()
@@ -37,7 +41,10 @@ function wrap (argv, env, workingDir) {
   if (!ChildProcess) {
     var child = cp.spawn(process.execPath, [])
     ChildProcess = child.constructor
-    child.kill('SIGKILL')
+    if (process.platform === 'os390')
+      child.kill('SIGABRT')
+    else
+      child.kill('SIGKILL')
   }
 
   // spawn_sync available since Node v0.11
