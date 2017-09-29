@@ -12,7 +12,7 @@
     "which": "^1.2.4"
   },
   "scripts": {
-    "test": "tap test/*.js",
+    "test": "tap --timeout=240 test/*.js",
     "preversion": "npm test",
     "postversion": "npm publish",
     "postpublish": "git push origin --all; git push origin --tags",
@@ -29,7 +29,7 @@
   },
   "homepage": "https://github.com/isaacs/spawn-wrap#readme",
   "devDependencies": {
-    "tap": "^10.1.0"
+    "tap": "^10.7.2"
   },
   "files": [
     "index.js",
