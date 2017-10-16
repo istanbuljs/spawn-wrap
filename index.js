@@ -11,7 +11,8 @@ var mkdirp = require('mkdirp')
 var rimraf = require('rimraf')
 var path = require('path')
 var signalExit = require('signal-exit')
-var homedir = require('os-homedir')() + '/.node-spawn-wrap-'
+var home = process.env.SPAWN_WRAP_SHIM_ROOT || require('os-homedir')()
+var homedir = homedir + '/.node-spawn-wrap-'
 var which = require('which')
 var util = require('util')
 
@@ -285,6 +286,8 @@ function mungeEnv (workingDir, options) {
     var key = path.basename(workingDir).substr('.node-spawn-wrap-'.length)
     options.envPairs.push('SW_ORIG_' + key + '=' + options.originalNode)
   }
+
+  options.envPairs.push('SPAWN_WRAP_SHIM_ROOT=' + homedir)
 
   if (process.env.SPAWN_WRAP_DEBUG === '1')
     options.envPairs.push('SPAWN_WRAP_DEBUG=1')

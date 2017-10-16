@@ -52,6 +52,20 @@ process.on('exit', function (code) {
 require('spawn-wrap').runMain()
 ```
 
+## ENVIRONMENT VARIABLES
+
+Spawn-wrap responds to two environment variables, both of which are
+preserved through child processes.
+
+`SPAWN_WRAP_DEBUG=1` in the environment will make this module dump a
+lot of information to stderr.
+
+`SPAWN_WRAP_SHIM_ROOT` can be set to a path on the filesystem where
+the shim files are written in a `.node-spawn-wrap-<id>` folder.  By
+default this is done in `$HOME`, but in some environments you may wish
+to point it at some other root.  (For example, if `$HOME` is mounted
+as read-only in a virtual machine or container.)
+
 ## CONTRACTS and CAVEATS
 
 The initial wrap call uses synchronous I/O.  Probably you should not
