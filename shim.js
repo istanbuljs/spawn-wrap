@@ -170,7 +170,7 @@ if (nargs) {
     runMain()
   }}(spawnWrap.runMain)
 }
-spawnWrap(argv, env, __dirname)
+global.spawnWrapUnwrap = spawnWrap(argv, env, __dirname)
 
 debug('shim runMain', process.argv)
 delete require.cache[process.argv[1]]
