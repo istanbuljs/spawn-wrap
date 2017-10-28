@@ -12,7 +12,7 @@ var rimraf = require('rimraf')
 var path = require('path')
 var signalExit = require('signal-exit')
 var home = process.env.SPAWN_WRAP_SHIM_ROOT || require('os-homedir')()
-var homedir = homedir + '/.node-spawn-wrap-'
+var homedir = home + '/.node-spawn-wrap-'
 var which = require('which')
 var util = require('util')
 
