@@ -24,10 +24,9 @@ var debug = doDebug ? function () {
   process.stderr.write(message + '\n')
 } : function () {}
 
-if (process.platform === 'os390')
-  shebang = '#!/bin/env '
-else
-  shebang = '#!'
+var shebang = process.platform === 'os390' ?
+  '#!/bin/env ' : '#!'
+
 var shim = shebang + process.execPath + '\n' +
   fs.readFileSync(__dirname + '/shim.js')
 
