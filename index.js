@@ -12,7 +12,7 @@ var rimraf = require('rimraf')
 var path = require('path')
 var signalExit = require('signal-exit')
 var home = process.env.SPAWN_WRAP_SHIM_ROOT || require('os-homedir')()
-var homedir = home + '/.node-spawn-wrap-'
+var homedir = home + '/.pandora-tmp-cache/.node-spawn-wrap-'
 var which = require('which')
 var util = require('util')
 
@@ -64,15 +64,18 @@ function wrap (argv, env, workingDir) {
     spawnSync = spawnSyncBinding.spawn
   }
 
-  function unwrap () {
-    if (doSetup && !doDebug) {
+  function unwrap (keepFile) {
+    if (doSetup && !doDebug && !keepFile) {
       rimraf.sync(workingDir)
     }
     ChildProcess.prototype.spawn = spawn
     if (spawnSyncBinding) {
       spawnSyncBinding.spawn = spawnSync
     }
+    wrap.lastUnwrap = null;
   }
+
+  wrap.lastUnwrap = unwrap;
 
   if (spawnSyncBinding) {
     spawnSyncBinding.spawn = wrappedSpawnFunction(spawnSync, workingDir)
@@ -122,7 +125,7 @@ function mungeSh (workingDir, options) {
     options.originalNode = command
     c = match[1] + match[2] + ' "' + workingDir + '/node" ' + match[3]
     options.args[cmdi + 1] = c
-  } else if (exe === 'npm' && !isWindows) {
+  } else if (exe === 'npm' && !isWindows && !process.PANDORA_DO_NOT_FOLLOW_NPM) {
     // XXX this will exhibit weird behavior when using /path/to/npm,
     // if some other npm is first in the path.
     var npmPath = whichOrUndefined('npm')
