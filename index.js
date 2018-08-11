@@ -422,17 +422,17 @@ function setup (argv, env) {
       'SET PATHEXT=%PATHEXT:;.JS;=;%\r\n' +
       '"' + process.execPath + '"' + ' "%~dp0\\.\\node" %*\r\n'
 
-    fs.writeFileSync(workingDir + '/node.cmd', cmdShim)
-    fs.chmodSync(workingDir + '/node.cmd', '0755')
+    fs.writeFileSync(path.join(workingDir, 'node.cmd'), cmdShim)
+    fs.chmodSync(path.join(workingDir, 'node.cmd'), '0755')
   }
-  fs.writeFileSync(workingDir + '/node', shim)
-  fs.chmodSync(workingDir + '/node', '0755')
+  fs.writeFileSync(path.join(workingDir, 'node'), shim)
+  fs.chmodSync(path.join(workingDir, 'node'), '0755')
   const cmdname = path.basename(process.execPath).replace(/\.exe$/i, '')
   if (cmdname !== 'node') {
-    fs.writeFileSync(workingDir + '/' + cmdname, shim)
-    fs.chmodSync(workingDir + '/' + cmdname, '0755')
+    fs.writeFileSync(path.join(workingDir, cmdname), shim)
+    fs.chmodSync(path.join(workingDir, cmdname), '0755')
   }
-  fs.writeFileSync(workingDir + '/settings.json', settings)
+  fs.writeFileSync(path.join(workingDir, 'settings.json'), settings)
 
   return workingDir
 }
