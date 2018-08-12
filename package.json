@@ -36,6 +36,7 @@
     "tap": "^13.1.6"
   },
   "files": [
+    "lib/",
     "index.js",
     "shim.js"
   ],

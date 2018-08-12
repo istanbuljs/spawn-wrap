@@ -6,7 +6,6 @@ var node = process.execPath
 var wrap = require.resolve('./fixtures/wrap.js')
 var rimraf = require('rimraf')
 var mkdirp = require('mkdirp')
-var fs = require('fs')
 
 if (process.platform === 'win32') {
   t.plan(0, 'No proper shebang support on windows, so skip this')
