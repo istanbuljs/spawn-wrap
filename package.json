@@ -41,6 +41,11 @@
     "lib/index.js",
     "shim.js"
   ],
+  "standard": {
+    "ignore": [
+      "lib/node-internals"
+    ]
+  },
   "tap": {
     "coverage": false,
     "timeout": 240
