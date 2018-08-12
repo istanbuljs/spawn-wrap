@@ -13,7 +13,7 @@ if (process.platform === 'win32') {
   process.exit(0)
 }
 
-var expect =
+const expect =
   'before in shim\n' +
   'shebang main foo,bar\n' +
   'after in shim\n' +
@@ -21,7 +21,7 @@ var expect =
   'shebang main foo,bar\n' +
   'after in shim\n'
 
-var fixdir = path.resolve(__dirname, 'fixtures', 'shebangs')
+const fixdir = path.resolve(__dirname, 'fixtures', 'shebangs')
 
 t.test('setup', function (t) {
   rimraf.sync(fixdir)
@@ -30,23 +30,23 @@ t.test('setup', function (t) {
 })
 
 t.test('absolute', function (t) {
-  var file = path.resolve(fixdir, 'absolute.js')
+  const file = path.resolve(fixdir, 'absolute.js')
   runTest(file, process.execPath, t)
 })
 
 t.test('env', function (t) {
-  var file = path.resolve(fixdir, 'env.js')
+  const file = path.resolve(fixdir, 'env.js')
   runTest(file, '/usr/bin/env node', t)
 })
 
 function runTest (file, shebang, t) {
-  var content = '#!' + shebang + '\n' +
+  const content = '#!' + shebang + '\n' +
     'console.log("shebang main " + process.argv.slice(2))\n'
   fs.writeFileSync(file, content, 'utf8')
   fs.chmodSync(file, '0755')
-  var child = spawn(node, [wrap, file, 'foo', 'bar'])
-  var out = ''
-  var err = ''
+  const child = spawn(node, [wrap, file, 'foo', 'bar'])
+  let out = ''
+  let err = ''
   child.stdout.on('data', function (c) {
     out += c
   })

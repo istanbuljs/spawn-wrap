@@ -1,4 +1,4 @@
-const {legacyWrap, wrapGlobal, runMain} = require('./lib/index')
+const {applyContextOnGlobal, legacyWrap, runMain, wrapGlobal} = require('./lib/index')
 
 module.exports = legacyWrap
-Object.assign(module.exports, {runMain, wrapGlobal})
+Object.assign(module.exports, {applyContextOnGlobal, runMain, wrapGlobal})
