@@ -1,7 +1,8 @@
 var sw = require('../')
 var argv = process.argv.slice(1).map(function (arg) {
-  if (arg === __filename)
+  if (arg === __filename) {
     arg = 'double-wrap.js'
+  }
   return arg
 })
 

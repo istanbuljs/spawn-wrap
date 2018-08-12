@@ -52,10 +52,11 @@ function runTest (file, shebang, t) {
   child.stderr.on('data', function (c) {
     err += c
   })
-  child.on('close', function (code,  signal) {
+  child.on('close', function (code, signal) {
     t.equal(code, 0)
     t.equal(signal, null)
     t.equal(out, expect)
+    t.equal(err, '')
     t.end()
   })
 }

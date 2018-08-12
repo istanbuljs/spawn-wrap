@@ -13,7 +13,6 @@
 
 // wrap in iife for babylon to handle module-level return
 ;(function () {
-
   if (module !== require.main) {
     throw new Error('spawn-wrap: cli wrapper invoked as non-main script')
   }
@@ -152,21 +151,29 @@
   if (IS_WINDOWS) {
     for (const i in process.env) {
       if (/^path$/i.test(i)) {
-        process.env[i] = process.env[i].replace(__dirname + ';', '')
+        process.env[i] = removeFromPath(process.env[i], __dirname)
       }
     }
   } else {
-    process.env.PATH = process.env.PATH.replace(__dirname + ':', '')
+    process.env.PATH = removeFromPath(process.env.PATH, __dirname)
+  }
+
+  function removeFromPath (envValue, pathToRemove) {
+    const pathSeparator = isWindows() ? ';' : ':'
+    return envValue
+      .split(pathSeparator)
+      .filter(p => p !== pathToRemove)
+      .join(pathSeparator)
   }
 
   const spawnWrap = require(settings.module)
   if (nargs) {
-    spawnWrap.runMain = function (original) {
+    spawnWrap.runMain = (function (original) {
       return function () {
         spawnWrap.runMain = original
         runMain()
       }
-    }(spawnWrap.runMain)
+    })(spawnWrap.runMain)
   }
   spawnWrap(argv, env, __dirname)
 

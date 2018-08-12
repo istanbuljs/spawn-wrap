@@ -1,9 +1,4 @@
 var sw = require('../')
-var argv = process.argv.slice(1).map(function (arg) {
-  if (arg === __filename)
-    arg = 'double-wrap.js'
-  return arg
-})
 
 var node = process.execPath
 var fg = require('foreground-child')

@@ -18,7 +18,7 @@ spawn(path.resolve(process.argv[2]), process.argv.slice(3), {
     ':' + process.env.PATH
 
   spawn(path.basename(process.argv[2]), process.argv.slice(3), {
-    stdio: 'inherit',
+    stdio: 'inherit'
   }, function (code, signal) {
     if (code || signal) {
       throw new Error('failed with ' + (code || signal))

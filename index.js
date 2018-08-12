@@ -12,17 +12,16 @@ const mkdirp = require('mkdirp')
 const rimraf = require('rimraf')
 const path = require('path')
 const signalExit = require('signal-exit')
-const {IS_DEBUG, debug} = require("./lib/debug")
-const {munge} = require("./lib/munge")
-const {homedir} = require("./lib/homedir")
+const {IS_DEBUG, debug} = require('./lib/debug')
+const {munge} = require('./lib/munge')
+const {homedir} = require('./lib/homedir')
 
-const shebang = process.platform === 'os390' ?
-  '#!/bin/env ' : '#!'
+const shebang = process.platform === 'os390' ? '#!/bin/env ' : '#!'
 
 const shim = shebang + process.execPath + '\n' +
   fs.readFileSync(path.join(__dirname, 'shim.js'))
 
-function wrap(argv, env, workingDir) {
+function wrap (argv, env, workingDir) {
   const spawnSyncBinding = process.binding('spawn_sync')
 
   // if we're passed in the working dir, then it means that setup
@@ -34,7 +33,7 @@ function wrap(argv, env, workingDir) {
   const spawn = ChildProcess.prototype.spawn
   const spawnSync = spawnSyncBinding.spawn
 
-  function unwrap() {
+  function unwrap () {
     if (doSetup && !IS_DEBUG) {
       rimraf.sync(workingDir)
     }
@@ -58,7 +57,7 @@ function wrappedSpawnFunction (fn, workingDir) {
   }
 }
 
-function setup(argv, env) {
+function setup (argv, env) {
   if (argv && typeof argv === 'object' && !env && !Array.isArray(argv)) {
     env = argv
     argv = []
@@ -110,7 +109,7 @@ function setup(argv, env) {
     module: __filename,
     deps: {
       foregroundChild: require.resolve('foreground-child'),
-      signalExit: require.resolve('signal-exit'),
+      signalExit: require.resolve('signal-exit')
     },
     isWindows: IS_WINDOWS,
     key: key,
