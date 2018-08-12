@@ -1,5 +1,3 @@
-'use strict'
-
 const cp = require('child_process')
 const fs = require('fs')
 const isWindows = require('is-windows')

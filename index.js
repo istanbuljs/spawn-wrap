@@ -1,5 +1,3 @@
-'use strict'
-
 const {wrap, runMain} = require('./lib/index')
 
 module.exports = wrap

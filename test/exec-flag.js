@@ -1,5 +1,3 @@
-'use strict'
-
 const t = require('tap')
 const cp = require('child_process')
 const sw = require('../')

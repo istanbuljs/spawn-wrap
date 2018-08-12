@@ -1,5 +1,3 @@
-'use strict'
-
 const {spawn} = require('child_process')
 const fs = require('fs')
 const mkdirp = require('mkdirp')

@@ -1,5 +1,3 @@
-'use strict'
-
 const fg = require('foreground-child')
 const sw = require('../')
 
