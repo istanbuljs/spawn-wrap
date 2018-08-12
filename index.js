@@ -41,11 +41,7 @@ const pathRe = isWindows ? /^PATH=/i : /^PATH=/
 const colon = isWindows ? ';' : ':'
 
 function wrap (argv, env, workingDir) {
-  // spawn_sync available since Node v0.11
-  let spawnSyncBinding, spawnSync
-  try {
-    spawnSyncBinding = process.binding('spawn_sync')
-  } catch (e) {}
+  const spawnSyncBinding = process.binding('spawn_sync')
 
   // if we're passed in the working dir, then it means that setup
   // was already done, so no need.
@@ -54,23 +50,17 @@ function wrap (argv, env, workingDir) {
     workingDir = setup(argv, env)
   }
   const spawn = ChildProcess.prototype.spawn
-  if (spawnSyncBinding) {
-    spawnSync = spawnSyncBinding.spawn
-  }
+  const spawnSync = spawnSyncBinding.spawn
 
-  function unwrap () {
+  function unwrap() {
     if (doSetup && !doDebug) {
       rimraf.sync(workingDir)
     }
     ChildProcess.prototype.spawn = spawn
-    if (spawnSyncBinding) {
-      spawnSyncBinding.spawn = spawnSync
-    }
+    spawnSyncBinding.spawn = spawnSync
   }
 
-  if (spawnSyncBinding) {
-    spawnSyncBinding.spawn = wrappedSpawnFunction(spawnSync, workingDir)
-  }
+  spawnSyncBinding.spawn = wrappedSpawnFunction(spawnSync, workingDir)
   ChildProcess.prototype.spawn = wrappedSpawnFunction(spawn, workingDir)
 
   return unwrap

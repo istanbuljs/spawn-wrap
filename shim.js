@@ -134,7 +134,6 @@
     const pexec = process.execArgv
     if (JSON.stringify(pexec) !== JSON.stringify(needExecArgv)) {
       debug('need execArgv for this', pexec, '=>', needExecArgv)
-      const spawn = require('child_process').spawn
       const sargs = pexec.concat(needExecArgv).concat(process.argv.slice(1))
       foregroundChild(node, sargs)
       return
