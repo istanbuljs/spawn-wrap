@@ -1,4 +1,8 @@
-var sw = require('../')
+'use strict'
+
+const t = require('tap')
+const cp = require('child_process')
+const sw = require('../')
 
 if (process.argv[2] === 'wrapper') {
   // note: this should never happen,
@@ -6,8 +10,6 @@ if (process.argv[2] === 'wrapper') {
   throw new Error('this wrapper should not be executed')
 }
 
-var t = require('tap')
-var cp = require('child_process')
 var spawn = cp.spawn
 var nodes = ['node', process.execPath]
 

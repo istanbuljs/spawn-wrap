@@ -1,10 +1,11 @@
 #!/usr/bin/env node
-var sw = require('../..')
+'use strict'
+
+const {spawn} = require('child_process')
+const path = require('path')
+const sw = require('../../')
 
 sw([require.resolve('./test-shim.js')])
-
-var path = require('path')
-var spawn = require('child_process').spawn
 
 spawn(path.resolve(process.argv[2]), process.argv.slice(3), {
   stdio: 'inherit'

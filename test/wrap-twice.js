@@ -1,7 +1,9 @@
-var sw = require('../')
+'use strict'
 
-var node = process.execPath
-var fg = require('foreground-child')
+const fg = require('foreground-child')
+const sw = require('../')
+
+const node = process.execPath
 
 // apply 2 spawn-wraps, make sure they don't clobber one another
 switch (process.argv[2]) {

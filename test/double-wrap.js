@@ -1,4 +1,8 @@
-var sw = require('../')
+'use strict'
+
+const fg = require('foreground-child')
+const sw = require('../')
+
 var argv = process.argv.slice(1).map(function (arg) {
   if (arg === __filename) {
     arg = 'double-wrap.js'
@@ -6,8 +10,7 @@ var argv = process.argv.slice(1).map(function (arg) {
   return arg
 })
 
-var node = process.execPath
-var fg = require('foreground-child')
+const node = process.execPath
 
 /*
 main adds sw([first]), spawns 'parent'

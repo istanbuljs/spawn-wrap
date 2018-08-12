@@ -1,14 +1,16 @@
-var sw = require('../')
-var IS_WINDOWS = require('is-windows')()
-var winNoShebang = IS_WINDOWS && 'no shebang execution on windows'
-var winNoSig = IS_WINDOWS && 'no signals get through cmd'
+'use strict'
 
-var onExit = require('signal-exit')
-var cp = require('child_process')
-var fixture = require.resolve('./fixtures/script.js')
-var npmFixture = require.resolve('./fixtures/npm')
-var fs = require('fs')
-var path = require('path')
+const cp = require('child_process')
+const fs = require('fs')
+const isWindows = require('is-windows')
+const path = require('path')
+const onExit = require('signal-exit')
+const sw = require('../')
+
+const winNoShebang = isWindows() && 'no shebang execution on windows'
+const winNoSig = isWindows() && 'no signals get through cmd'
+const fixture = require.resolve('./fixtures/script.js')
+const npmFixture = require.resolve('./fixtures/npm')
 
 // wrap in iife for babylon to handle module-level return
 ;(function () {
@@ -198,7 +200,7 @@ var path = require('path')
     t.plan(4)
 
     t.test('basic', function (t) {
-      var opt = IS_WINDOWS ? null : {shell: '/bin/bash'}
+      var opt = isWindows() ? null : {shell: '/bin/bash'}
       var child = cp.exec('"' + process.execPath + '" "' + fixture + '" xyz', opt)
 
       var out = ''
@@ -214,7 +216,7 @@ var path = require('path')
     })
 
     t.test('execPath wrapped with quotes', function (t) {
-      var opt = IS_WINDOWS ? null : {shell: '/bin/bash'}
+      var opt = isWindows() ? null : {shell: '/bin/bash'}
       var child = cp.exec(JSON.stringify(process.execPath) + ' ' + fixture +
         ' xyz', opt)
 

@@ -1,11 +1,14 @@
-var path = require('path')
-var fs = require('fs')
-var spawn = require('child_process').spawn
-var t = require('tap')
-var node = process.execPath
-var wrap = require.resolve('./fixtures/wrap.js')
-var rimraf = require('rimraf')
-var mkdirp = require('mkdirp')
+'use strict'
+
+const {spawn} = require('child_process')
+const fs = require('fs')
+const mkdirp = require('mkdirp')
+const path = require('path')
+const rimraf = require('rimraf')
+const t = require('tap')
+
+const node = process.execPath
+const wrap = require.resolve('./fixtures/wrap.js')
 
 if (process.platform === 'win32') {
   t.plan(0, 'No proper shebang support on windows, so skip this')

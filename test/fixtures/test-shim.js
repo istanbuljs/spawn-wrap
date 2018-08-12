@@ -1,3 +1,3 @@
 console.log('before in shim')
-require('../..').runMain()
+require('../../').runMain()
 console.log('after in shim')
