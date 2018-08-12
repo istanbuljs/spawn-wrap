@@ -45,6 +45,7 @@
 
   const settings = require('./settings.json')
   const foregroundChild = require(settings.deps.foregroundChild)
+  const IS_WINDOWS = settings.isWindows
   const argv = settings.argv
   const nargs = argv.length
   const env = settings.env
@@ -148,14 +149,7 @@
 
   // Unwrap the PATH environment var so that we're not mucking
   // with the environment.  It'll get re-added if they spawn anything
-  const isWindows = (
-    // TODO: Use `lib/is-windows`
-    process.platform === 'win32' ||
-    process.env.OSTYPE === 'cygwin' ||
-    process.env.OSTYPE === 'msys'
-  )
-
-  if (isWindows) {
+  if (IS_WINDOWS) {
     for (const i in process.env) {
       if (/^path$/i.test(i)) {
         process.env[i] = process.env[i].replace(__dirname + ';', '')
