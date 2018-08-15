@@ -25,13 +25,14 @@
     "build:lib": "tsc -p src/lib",
     "build:shim": "tsc -p src/shim",
     "clean": "rm -rf ~/.node-spawn-wrap",
-    "posttest": "standard",
+    "posttest": "standard && npm run tslint",
     "postpublish": "git push origin --all; git push origin --tags",
     "postversion": "npm publish",
     "prepare": "npm run build",
     "pretest": "npm run build",
     "preversion": "npm test",
-    "test": "tap \"test/*.js\""
+    "test": "tap \"test/*.js\"",
+    "tslint": "tslint -p tsconfig.json"
   },
   "repository": {
     "type": "git",

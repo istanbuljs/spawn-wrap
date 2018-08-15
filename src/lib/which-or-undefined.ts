@@ -1,10 +1,9 @@
 import which from "which";
 
-export function whichOrUndefined (cmd: string): string | undefined {
-  let path
+export function whichOrUndefined(cmd: string): string | undefined {
   try {
-    path = which.sync(cmd)
-  } catch (er) {
+    return which.sync(cmd);
+  } catch (err) {
+    return undefined;
   }
-  return path
 }

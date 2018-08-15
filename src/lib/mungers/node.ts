@@ -1,48 +1,48 @@
-import path from "path"
-import {debug} from "../debug";
-import {whichOrUndefined} from "../which-or-undefined";
+import path from "path";
+import { debug } from "../debug";
+import { whichOrUndefined } from "../which-or-undefined";
 
-export function mungeNode (workingDir: string, options: any) {
-  options.originalNode = options.file
-  const command = path.basename(options.file).replace(/\.exe$/i, '')
+export function mungeNode(workingDir: string, options: any) {
+  options.originalNode = options.file;
+  const command = path.basename(options.file).replace(/\.exe$/i, "");
   // make sure it has a main script.
   // otherwise, just let it through.
-  let a = 0
-  let hasMain = false
-  let mainIndex = 1
+  let a = 0;
+  let hasMain = false;
+  let mainIndex = 1;
   for (a = 1; !hasMain && a < options.args.length; a++) {
     switch (options.args[a]) {
-      case '-p':
-      case '-i':
-      case '--interactive':
-      case '--eval':
-      case '-e':
-      case '-pe':
-        hasMain = false
-        a = options.args.length
-        continue
+      case "-p":
+      case "-i":
+      case "--interactive":
+      case "--eval":
+      case "-e":
+      case "-pe":
+        hasMain = false;
+        a = options.args.length;
+        continue;
 
-      case '-r':
-      case '--require':
-        a += 1
-        continue
+      case "-r":
+      case "--require":
+        a += 1;
+        continue;
 
       default:
         // TODO: Double-check this part
         if (options.args[a].match(/^-/)) {
-          continue
+          continue;
         } else {
-          hasMain = true
-          mainIndex = a
-          a = options.args.length
-          break
+          hasMain = true;
+          mainIndex = a;
+          a = options.args.length;
+          break;
         }
     }
   }
 
   if (hasMain) {
-    const replace = workingDir + '/' + command
-    options.args.splice(mainIndex, 0, replace)
+    const replace = workingDir + "/" + command;
+    options.args.splice(mainIndex, 0, replace);
   }
 
   // If the file is just something like 'node' then that'll
@@ -51,9 +51,9 @@ export function mungeNode (workingDir: string, options: any) {
   // This also handles the case where there's not a main file, like
   // `node -e 'program'`, where we want to avoid the shim entirely.
   if (options.file === options.basename) {
-    const realNode = whichOrUndefined(options.file) || process.execPath
-    options.file = options.args[0] = realNode
+    const realNode = whichOrUndefined(options.file) || process.execPath;
+    options.file = options.args[0] = realNode;
   }
 
-  debug('mungeNode after', options.file, options.args)
+  debug("mungeNode after", options.file, options.args);
 }

@@ -9,61 +9,63 @@
 // a require('spawn-wrap').runMain() function that will strip
 // off the injected arguments and run the main file.
 
-import util from "util"
-import fs from "fs"
+import fs from "fs";
+import util from "util";
 
 declare const context: any;
 /* global context */
+
 /* shim-template-include: context */
 
-// wrap in iife for babylon to handle module-level return
-;(function () {
+function shimMain() {
   if (module !== require.main) {
-    throw new Error('spawn-wrap: cli wrapper invoked as non-main script')
+    throw new Error("spawn-wrap: cli wrapper invoked as non-main script");
   }
 
-  const doDebug = process.env.SPAWN_WRAP_DEBUG === '1'
+  const doDebug = process.env.SPAWN_WRAP_DEBUG === "1";
 
-  function debug (format: string, ...params: any[]) {
+  function debug(format: string, ...params: any[]) {
     if (!doDebug) {
-      return
+      return;
     }
 
-    var message = util.format(format, ...params).trim()
-    var pref = 'SW ' + process.pid + ': '
-    message = pref + message.split('\n').join('\n' + pref)
-    fs.writeSync(2, message + '\n')
+    let message = util.format(format, ...params).trim();
+    const prefix = "SW " + process.pid + ": ";
+    message = prefix + message.split("\n").join("\n" + prefix);
+    fs.writeSync(2, message + "\n");
   }
 
-  debug('shim', [process.argv[0]].concat(process.execArgv, process.argv.slice(1)))
+  debug("shim", [process.argv[0]].concat(process.execArgv, process.argv.slice(1)));
 
-  const Module = require('module')
-  const path = require('path')
+  const Module = require("module");
+  const path = require("path");
 
-  const foregroundChild = require(context.deps.foregroundChild)
-  const IS_WINDOWS = settings.isWindows
-  const args = context.args
-  const nargs = args.length
-  const env = context.env
-  const key = context.key
-  const node = process.env['SW_ORIG_' + key] || process.execPath
+  const foregroundChild = require(context.deps.foregroundChild);
+  const IS_WINDOWS = settings.isWindows;
+  const args = context.args;
+  const nargs = args.length;
+  const env = context.env;
+  const key = context.key;
+  const node = process.env["SW_ORIG_" + key] || process.execPath;
 
   for (const k in env) {
-    process.env[k] = env[k]
+    if (env.hasOwnProperty(k)) {
+      process.env[k] = env[k];
+    }
   }
 
-  const needExecArgs = context.execArgs || []
+  const needExecArgs = context.execArgs || [];
 
   // If the user added their OWN wrapper pre-load script, then
   // this will pop that off of the argv, and load the "real" main
-  function runMain () {
-    debug('runMain pre', process.argv)
-    process.argv.splice(1, nargs)
-    process.argv[1] = path.resolve(process.argv[1])
-    delete require.cache[process.argv[1]]
-    debug('runMain post', process.argv)
-    Module.runMain()
-    debug('runMain after')
+  function runMain() {
+    debug("runMain pre", process.argv);
+    process.argv.splice(1, nargs);
+    process.argv[1] = path.resolve(process.argv[1]);
+    delete require.cache[process.argv[1]];
+    debug("runMain post", process.argv);
+    Module.runMain();
+    debug("runMain after");
   }
 
   // Argv coming in looks like:
@@ -74,36 +76,36 @@ declare const context: any;
   //
   // If we don't have a main script, then just run with the necessary
   // execArgv
-  let mainIdx: number | undefined = undefined
+  let mainIdx: number | undefined;
   for (let a = 2; mainIdx === undefined && a < process.argv.length; a++) {
     switch (process.argv[a]) {
-      case '-i':
-      case '--interactive':
-      case '--eval':
-      case '-e':
-      case '-p':
-      case '-pe':
-        mainIdx = undefined
-        a = process.argv.length
-        continue
+      case "-i":
+      case "--interactive":
+      case "--eval":
+      case "-e":
+      case "-p":
+      case "-pe":
+        mainIdx = undefined;
+        a = process.argv.length;
+        continue;
 
-      case '-r':
-      case '--require':
-        a += 1
-        continue
+      case "-r":
+      case "--require":
+        a += 1;
+        continue;
 
       default:
         // TODO: Double-check what's going on
         if (process.argv[a].match(/^-/)) {
-          continue
+          continue;
         } else {
-          mainIdx = a
-          a = process.argv.length
-          break
+          mainIdx = a;
+          a = process.argv.length;
+          break;
         }
     }
   }
-  debug('after argv parse mainIdx=%j', mainIdx)
+  debug("after argv parse mainIdx=%j", mainIdx);
 
   if (mainIdx !== undefined && mainIdx > 2) {
     // if the main file is above #2, then it means that there
@@ -111,16 +113,16 @@ declare const context: any;
     // to slice everything from 2 to hasMain, and pass that
     // directly to node.  This also splices out the user-supplied
     // execArgv from the argv.
-    const addExecArgs = process.argv.splice(2, mainIdx - 2)
-    needExecArgs.push.apply(needExecArgs, addExecArgs)
+    const addExecArgs = process.argv.splice(2, mainIdx - 2);
+    needExecArgs.push.apply(needExecArgs, addExecArgs);
   }
 
   if (mainIdx === undefined) {
     // we got loaded by mistake for a `node -pe script` or something.
-    const args = process.execArgv.concat(needExecArgs, process.argv.slice(2))
-    debug('no main file!', args)
-    foregroundChild(node, args)
-    return
+    const args = process.execArgv.concat(needExecArgs, process.argv.slice(2));
+    debug("no main file!", args);
+    foregroundChild(node, args);
+    return;
   }
 
   // If there are execArgv, and they're not the same as how this module
@@ -128,56 +130,58 @@ declare const context: any;
   // --harmony or --use_strict that needs to be *before* the main
   // module.
   if (needExecArgs.length) {
-    const pexec = process.execArgv
+    const pexec = process.execArgv;
     if (JSON.stringify(pexec) !== JSON.stringify(needExecArgs)) {
-      debug('need execArgv for this', pexec, '=>', needExecArgs)
-      const sargs = pexec.concat(needExecArgs).concat(process.argv.slice(1))
-      foregroundChild(node, sargs)
-      return
+      debug("need execArgv for this", pexec, "=>", needExecArgs);
+      const sargs = pexec.concat(needExecArgs).concat(process.argv.slice(1));
+      foregroundChild(node, sargs);
+      return;
     }
   }
 
   // At this point, we've verified that we got the correct execArgv,
   // and that we have a main file, and that the main file is sitting at
   // argv[2].  Splice this shim off the list so it looks like the main.
-  const spliceArgs = [1, 1].concat(args)
-  process.argv.splice.apply(process.argv, spliceArgs)
+  const spliceArgs = [1, 1].concat(args);
+  process.argv.splice.apply(process.argv, spliceArgs);
 
   // Unwrap the PATH environment var so that we're not mucking
   // with the environment.  It'll get re-added if they spawn anything
   if (IS_WINDOWS) {
     for (const name in process.env) {
+      if (!process.env.hasOwnProperty(name)) {
+        continue;
+      }
       const value = process.env[name];
       if (value !== undefined && /^path$/i.test(name)) {
-        process.env[name] = removeFromPath(value, __dirname)
+        process.env[name] = removeFromPath(value, __dirname);
       }
     }
   } else if (process.env.PATH !== undefined) {
-    process.env.PATH = removeFromPath(process.env.PATH, __dirname)
+    process.env.PATH = removeFromPath(process.env.PATH, __dirname);
   }
 
-  function removeFromPath (envValue: string, pathToRemove: string): string {
-    const pathSeparator = isWindows() ? ';' : ':'
+  function removeFromPath(envValue: string, pathToRemove: string): string {
+    const pathSeparator = isWindows() ? ";" : ":";
     return envValue
       .split(pathSeparator)
-      .filter(p => p !== pathToRemove)
-      .join(pathSeparator)
+      .filter((p) => p !== pathToRemove)
+      .join(pathSeparator);
   }
 
-  const spawnWrap = require(context.module)
+  const spawnWrap = require(context.module);
   if (nargs) {
-    spawnWrap.runMain = (function (original) {
-      return function () {
-        spawnWrap.runMain = original
-        runMain()
-      }
-    })(spawnWrap.runMain)
+    const original = spawnWrap.runMain;
+    spawnWrap.runMain = () => {
+      spawnWrap.runMain = original;
+      runMain();
+    };
   }
-  spawnWrap.applyContextOnGlobal(context)
+  spawnWrap.applyContextOnGlobal(context);
 
-  debug('shim runMain', process.argv)
-  delete require.cache[process.argv[1]]
-  Module.runMain()
+  debug("shim runMain", process.argv);
+  delete require.cache[process.argv[1]];
+  Module.runMain();
+}
 
-// end iife wrapper for babylon
-})()
+shimMain();

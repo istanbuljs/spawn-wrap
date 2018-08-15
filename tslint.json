@@ -12,6 +12,7 @@
         "ignore-pattern": "https?://"
       }
     ],
+    "no-shadowed-variable": false,
     "object-literal-sort-keys": false
   },
   "rulesDirectory": []
