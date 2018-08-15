@@ -1,43 +1,59 @@
 import isWindows from "is-windows";
 import path from "path";
+import { SwContext } from "../context";
 import { debug } from "../debug";
-import { isNode } from "../exe-type";
+import { getExeBasename, isNode } from "../exe-type";
+import { InternalSpawnOptions } from "../types";
 import { whichOrUndefined } from "../which-or-undefined";
 
-export function mungeSh(workingDir: string, options: any) {
-  const cmdi = options.args.indexOf("-c");
-  if (cmdi === -1) {
-    return; // no -c argument
+const CMD_RE = /^\s*((?:[^= ]*=[^=\s]*)*[\s]*)([^\s]+|"[^"]+"|'[^']+')( .*)?$/;
+
+export function mungeSh(ctx: SwContext, options: Readonly<InternalSpawnOptions>): InternalSpawnOptions {
+  const cmdFlagIndex: number = options.args.indexOf("-c");
+  if (cmdFlagIndex < 0) {
+    // No `-c` argument
+    return options;
+  }
+  const cmdIndex = cmdFlagIndex + 1;
+  const c: string | undefined = options.args[cmdIndex];
+  if (c === undefined) {
+    return options;
   }
 
-  let c = options.args[cmdi + 1];
-  const re = /^\s*((?:[^= ]*=[^=\s]*)*[\s]*)([^\s]+|"[^"]+"|'[^']+')( .*)?$/;
-  const match = c.match(re);
+  const match = CMD_RE.exec(c);
   if (match === null) {
-    return; // not a command invocation.  weird but possible
+    // not a command invocation.  weird but possible
+    return options;
   }
 
-  let command = match[2];
+  const prefix: string = match[1];
+  const rawCommand: string = match[2];
+  const tail: string = match[3];
+
+  let command = rawCommand;
   // strip quotes off the command
-  const quote = command.charAt(0);
+  const quote = rawCommand.charAt(0);
   if ((quote === "\"" || quote === "'") && quote === command.slice(-1)) {
     command = command.slice(1, -1);
   }
-  const exe = path.basename(command);
+  const exe = getExeBasename(command);
 
+  const newArgs: string[] = [...options.args];
+
+  const nodeShim: string = path.join(ctx.shimDir, "node");
   if (isNode(exe)) {
-    options.originalNode = command;
-    c = match[1] + match[2] + " \"" + workingDir + "/node\" " + match[3];
-    options.args[cmdi + 1] = c;
+    // options.originalNode = command;
+    newArgs[cmdIndex] = `${prefix}${rawCommand} "${nodeShim}" ${tail}`;
   } else if (exe === "npm" && !isWindows()) {
     // XXX this will exhibit weird behavior when using /path/to/npm,
     // if some other npm is first in the path.
     const npmPath = whichOrUndefined("npm");
 
     if (npmPath) {
-      c = c.replace(re, "$1 \"" + workingDir + "/node\" \"" + npmPath + "\" $3");
-      options.args[cmdi + 1] = c;
-      debug("npm munge!", c);
+      newArgs[cmdIndex] = c.replace(CMD_RE, `$1 "${nodeShim}" "${npmPath}" $3`);
+      debug("npm munge!", newArgs[cmdIndex]);
     }
   }
+
+  return {...options, args: newArgs};
 }

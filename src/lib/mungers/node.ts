@@ -1,16 +1,18 @@
 import path from "path";
+import { SwContext } from "../context";
 import { debug } from "../debug";
+import { getExeBasename } from "../exe-type";
+import { InternalSpawnOptions } from "../types";
 import { whichOrUndefined } from "../which-or-undefined";
 
-export function mungeNode(workingDir: string, options: any) {
-  options.originalNode = options.file;
-  const command = path.basename(options.file).replace(/\.exe$/i, "");
+export function mungeNode(ctx: SwContext, options: Readonly<InternalSpawnOptions>): InternalSpawnOptions {
+  const cmdBasename: string = getExeBasename(options.file);
   // make sure it has a main script.
   // otherwise, just let it through.
   let a = 0;
-  let hasMain = false;
-  let mainIndex = 1;
-  for (a = 1; !hasMain && a < options.args.length; a++) {
+  // tslint:disable-next-line:no-unnecessary-initializer
+  let mainIndex: number | undefined = undefined;
+  for (a = 1; mainIndex === undefined && a < options.args.length; a++) {
     switch (options.args[a]) {
       case "-p":
       case "-i":
@@ -18,7 +20,7 @@ export function mungeNode(workingDir: string, options: any) {
       case "--eval":
       case "-e":
       case "-pe":
-        hasMain = false;
+        mainIndex = undefined;
         a = options.args.length;
         continue;
 
@@ -32,7 +34,6 @@ export function mungeNode(workingDir: string, options: any) {
         if (options.args[a].match(/^-/)) {
           continue;
         } else {
-          hasMain = true;
           mainIndex = a;
           a = options.args.length;
           break;
@@ -40,9 +41,12 @@ export function mungeNode(workingDir: string, options: any) {
     }
   }
 
-  if (hasMain) {
-    const replace = workingDir + "/" + command;
-    options.args.splice(mainIndex, 0, replace);
+  const newArgs: string[] = [...options.args];
+  let newFile: string = options.file;
+
+  if (mainIndex !== undefined) {
+    const replacement = path.join(ctx.shimDir, cmdBasename);
+    newArgs.splice(mainIndex, 0, replacement);
   }
 
   // If the file is just something like 'node' then that'll
@@ -50,10 +54,14 @@ export function mungeNode(workingDir: string, options: any) {
   // to resolve that here first.
   // This also handles the case where there's not a main file, like
   // `node -e 'program'`, where we want to avoid the shim entirely.
-  if (options.file === options.basename) {
-    const realNode = whichOrUndefined(options.file) || process.execPath;
-    options.file = options.args[0] = realNode;
+  if (cmdBasename === options.file) {
+    const resolvedNode: string | undefined = whichOrUndefined(options.file);
+    const realNode = resolvedNode !== undefined ? resolvedNode : process.execPath;
+    newArgs[0] = realNode;
+    newFile = realNode;
   }
 
-  debug("mungeNode after", options.file, options.args);
+  debug("mungeNode after", newFile, newArgs);
+
+  return {...options, args: newArgs, file: newFile};
 }

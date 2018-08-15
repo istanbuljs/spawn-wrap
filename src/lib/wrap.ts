@@ -1,15 +1,17 @@
+import { SwContext } from "./context";
 import { debug } from "./debug";
 import { internalMunge } from "./munge";
+import { InternalSpawnOptions } from "./types";
 
 /**
  * childProcess.ChildProcess.prototype.spawn
  * process.binding('spawn_sync').spawn
  */
-export function wrapInternalSpawn(fn: any, ctx: any) {
+export function wrapInternalSpawn(fn: any, ctx: SwContext) {
   return wrappedSpawn;
 
-  function wrappedSpawn(this: any, options: any) {
-    internalMunge(ctx.shimDir, options);
+  function wrappedSpawn(this: any, options: Readonly<InternalSpawnOptions>): any {
+    options = internalMunge(ctx, options);
     debug("WRAPPED", options);
     return fn.call(this, options);
   }
@@ -18,7 +20,7 @@ export function wrapInternalSpawn(fn: any, ctx: any) {
 /**
  * childProcess.spawn
  */
-export function wrapSpawn(fn: any, ctx: any) {
+export function wrapSpawn(fn: any, ctx: SwContext) {
   return wrappedSpawnSync;
 
   function wrappedSpawnSync(...args: any[]) {
@@ -29,7 +31,7 @@ export function wrapSpawn(fn: any, ctx: any) {
 /**
  * childProcess.spawnSync
  */
-export function wrapSpawnSync(fn: any, ctx: any) {
+export function wrapSpawnSync(fn: any, ctx: SwContext) {
   return wrappedSpawnSync;
 
   function wrappedSpawnSync(...args: any[]) {

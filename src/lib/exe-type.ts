@@ -23,7 +23,7 @@ export function isSh(file: string): boolean {
   return KNOWN_SHELLS.indexOf(file) >= 0;
 }
 
-export function getExeName(exePath: string): string {
+export function getExeBasename(exePath: string): string {
   const baseName = path.basename(exePath);
   return isWindows() ? baseName.replace(/\.exe$/i, "") : baseName;
 }

@@ -8,7 +8,7 @@ import path from "path";
 import rimraf from "rimraf";
 import signalExit from "signal-exit";
 import { debug } from "./debug";
-import { getExeName } from "./exe-type";
+import { getExeBasename } from "./exe-type";
 import { getCmdShim, getShim } from "./shim";
 
 const DEFAULT_SHIM_ROOT_NAME = ".node-spawn-wrap";
@@ -281,7 +281,7 @@ function resolvedOptionsToContext(resolved: ResolvedOptions): SwContext {
 function writeWrapContext(ctx: SwContext): Promise<void> {
   const promises = [];
 
-  const names = new Set(["node", getExeName(ctx.root.execPath)]);
+  const names = new Set(["node", getExeBasename(ctx.root.execPath)]);
 
   const shim = getShim(ctx);
   for (const name of names) {
@@ -299,7 +299,7 @@ function writeWrapContext(ctx: SwContext): Promise<void> {
 }
 
 function writeWrapContextSync(ctx: SwContext): void {
-  const names = new Set(["node", getExeName(ctx.root.execPath)]);
+  const names = new Set(["node", getExeBasename(ctx.root.execPath)]);
 
   const shim = getShim(ctx);
   for (const name of names) {
