@@ -2,7 +2,7 @@
   "name": "spawn-wrap",
   "version": "1.4.2",
   "description": "Wrap all spawned Node.js child processes by adding environs and arguments ahead of the main JavaScript file argument.",
-  "main": "index.js",
+  "main": "src/lib/index.js",
   "engines": {
     "node": ">=8.0.0"
   },
@@ -38,8 +38,7 @@
     "tap": "^13.1.6"
   },
   "files": [
-    "lib/index.js",
-    "shim.js"
+    "src"
   ],
   "standard": {
     "ignore": [
