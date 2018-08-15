@@ -1,7 +1,7 @@
 const fs = require('fs')
 const path = require('path')
 
-const SHIM_TEMPLATE_PATH = path.join(__dirname, 'shim-template.js')
+const SHIM_TEMPLATE_PATH = path.join(__dirname, '..', '..', 'build', 'shim', 'shim-template.js')
 const SHIM_TEMPLATE = fs.readFileSync(SHIM_TEMPLATE_PATH, 'utf8')
 
 function getShebang (execPath) {
@@ -13,9 +13,9 @@ function getShim (wrapContext) {
   const shebangLine = getShebang(wrapContext.root.execPath)
   const contextJson = JSON.stringify(wrapContext, null, 2)
   const contextLines = `const context = ${contextJson};\n`
-  return SHIM_TEMPLATE
-    .replace('/* shim-template-include: shebang */\n', shebangLine)
-    .replace('/* shim-template-include: context */\n', contextLines)
+  const shimBody = SHIM_TEMPLATE.replace('/* shim-template-include: context */\n', contextLines)
+  return `${shebangLine}${shimBody}`
+
 }
 
 function getCmdShim (wrapContext) {

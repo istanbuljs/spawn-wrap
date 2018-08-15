@@ -1,5 +1,3 @@
-/* shim-template-include: shebang */
-
 // This module should *only* be loaded as a main script
 // by child processes wrapped by spawn-wrap.  It sets up
 // argv to include the injected argv (including the user's
@@ -11,6 +9,10 @@
 // a require('spawn-wrap').runMain() function that will strip
 // off the injected arguments and run the main file.
 
+import util from "util"
+import fs from "fs"
+
+declare const context: any;
 /* global context */
 /* shim-template-include: context */
 
@@ -20,22 +22,15 @@
     throw new Error('spawn-wrap: cli wrapper invoked as non-main script')
   }
 
-  let util
   const doDebug = process.env.SPAWN_WRAP_DEBUG === '1'
-  let fs
 
-  function debug () {
+  function debug (format: string, ...param: any[]) {
     if (!doDebug) {
       return
     }
 
-    if (!fs) {
-      fs = require('fs')
-      util = require('util')
-    }
-
-    let message = util.format.apply(util, arguments).trim()
-    const pref = 'SW ' + process.pid + ': '
+    var message = util.format(format, ...param).trim()
+    var pref = 'SW ' + process.pid + ': '
     message = pref + message.split('\n').join('\n' + pref)
     fs.writeSync(2, message + '\n')
   }
@@ -79,8 +74,8 @@
   //
   // If we don't have a main script, then just run with the necessary
   // execArgv
-  let hasMain = false
-  for (let a = 2; !hasMain && a < process.argv.length; a++) {
+  let mainIdx: number | undefined = undefined
+  for (let a = 2; mainIdx === undefined && a < process.argv.length; a++) {
     switch (process.argv[a]) {
       case '-i':
       case '--interactive':
@@ -88,7 +83,7 @@
       case '-e':
       case '-p':
       case '-pe':
-        hasMain = false
+        mainIdx = undefined
         a = process.argv.length
         continue
 
@@ -102,25 +97,25 @@
         if (process.argv[a].match(/^-/)) {
           continue
         } else {
-          hasMain = a
+          mainIdx = a
           a = process.argv.length
           break
         }
     }
   }
-  debug('after argv parse hasMain=%j', hasMain)
+  debug('after argv parse mainIdx=%j', mainIdx)
 
-  if (hasMain > 2) {
+  if (mainIdx !== undefined && mainIdx > 2) {
     // if the main file is above #2, then it means that there
     // was a --exec_arg *before* it.  This means that we need
     // to slice everything from 2 to hasMain, and pass that
     // directly to node.  This also splices out the user-supplied
     // execArgv from the argv.
-    const addExecArgs = process.argv.splice(2, hasMain - 2)
+    const addExecArgs = process.argv.splice(2, mainIdx - 2)
     needExecArgs.push.apply(needExecArgs, addExecArgs)
   }
 
-  if (!hasMain) {
+  if (mainIdx === undefined) {
     // we got loaded by mistake for a `node -pe script` or something.
     const args = process.execArgv.concat(needExecArgs, process.argv.slice(2))
     debug('no main file!', args)
@@ -151,16 +146,17 @@
   // Unwrap the PATH environment var so that we're not mucking
   // with the environment.  It'll get re-added if they spawn anything
   if (IS_WINDOWS) {
-    for (const i in process.env) {
-      if (/^path$/i.test(i)) {
-        process.env[i] = removeFromPath(process.env[i], __dirname)
+    for (const name in process.env) {
+      const value = process.env[name];
+      if (value !== undefined && /^path$/i.test(name)) {
+        process.env[name] = removeFromPath(value, __dirname)
       }
     }
-  } else {
+  } else if (process.env.PATH !== undefined) {
     process.env.PATH = removeFromPath(process.env.PATH, __dirname)
   }
 
-  function removeFromPath (envValue, pathToRemove) {
+  function removeFromPath (envValue: string, pathToRemove: string): string {
     const pathSeparator = isWindows() ? ';' : ':'
     return envValue
       .split(pathSeparator)

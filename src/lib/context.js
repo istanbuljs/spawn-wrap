@@ -9,7 +9,7 @@ const rimraf = require('rimraf')
 const signalExit = require('signal-exit')
 const {debug} = require('./debug')
 const {getExeName} = require('./exe-type')
-const {getCmdShim, getShim} = require('./shim/index')
+const {getCmdShim, getShim} = require('./shim')
 
 function withWrapContext (options, handler) {
   return createWrapContext(options)
@@ -168,7 +168,7 @@ function resolveOptions (options) {
 
 function resolvedOptionsToContext (resolved) {
   return Object.freeze({
-    module: require.resolve('../index'),
+    module: require.resolve('./index'),
     deps: Object.freeze({
       foregroundChild: require.resolve('foreground-child'),
       isWindows: require.resolve('is-windows'),
