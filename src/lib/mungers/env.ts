@@ -1,10 +1,10 @@
-const isWindows = require('is-windows')
-const path = require('path')
+import isWindows from "is-windows";
+import path from "path";
 
 const pathRe = isWindows() ? /^PATH=/i : /^PATH=/
 const colon = isWindows() ? ';' : ':'
 
-function mungeEnv (workingDir, options) {
+export function mungeEnv (workingDir: string, options: any) {
   let pathEnv
   for (let i = 0; i < options.envPairs.length; i++) {
     const ep = options.envPairs[i]
@@ -27,8 +27,4 @@ function mungeEnv (workingDir, options) {
   if (process.env.SPAWN_WRAP_DEBUG === '1') {
     options.envPairs.push('SPAWN_WRAP_DEBUG=1')
   }
-}
-
-module.exports = {
-  mungeEnv
 }

@@ -1,14 +1,14 @@
-const {debug} = require('./debug')
-const {internalMunge} = require('./munge')
+import {debug} from './debug'
+import {internalMunge} from './munge'
 
 /**
  * childProcess.ChildProcess.prototype.spawn
  * process.binding('spawn_sync').spawn
  */
-function wrapInternalSpawn (fn, ctx) {
+export function wrapInternalSpawn (fn: any, ctx: any) {
   return wrappedSpawn
 
-  function wrappedSpawn (options) {
+  function wrappedSpawn (this: any, options: any) {
     internalMunge(ctx.shimDir, options)
     debug('WRAPPED', options)
     return fn.call(this, options)
@@ -18,10 +18,10 @@ function wrapInternalSpawn (fn, ctx) {
 /**
  * childProcess.spawn
  */
-function wrapSpawn (fn, ctx) {
+export function wrapSpawn (fn: any, ctx: any) {
   return wrappedSpawnSync
 
-  function wrappedSpawnSync (...args) {
+  function wrappedSpawnSync (...args: any[]) {
     throw new Error('NotImplemented')
   }
 }
@@ -29,16 +29,10 @@ function wrapSpawn (fn, ctx) {
 /**
  * childProcess.spawnSync
  */
-function wrapSpawnSync (fn, ctx) {
+export function wrapSpawnSync (fn: any, ctx: any) {
   return wrappedSpawnSync
 
-  function wrappedSpawnSync (...args) {
+  function wrappedSpawnSync (...args: any[]) {
     throw new Error('NotImplemented')
   }
-}
-
-module.exports = {
-  wrapInternalSpawn,
-  wrapSpawn,
-  wrapSpawnSync
 }

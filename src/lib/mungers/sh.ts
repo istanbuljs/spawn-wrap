@@ -1,10 +1,10 @@
-const isWindows = require('is-windows')
-const path = require('path')
-const {debug} = require('../debug')
-const {isNode} = require('../exe-type')
-const {whichOrUndefined} = require('../which-or-undefined')
+import isWindows from 'is-windows'
+import path from 'path'
+import {debug} from '../debug'
+import {isNode} from '../exe-type'
+import {whichOrUndefined} from '../which-or-undefined'
 
-function mungeSh (workingDir, options) {
+export function mungeSh (workingDir: string, options: any) {
   const cmdi = options.args.indexOf('-c')
   if (cmdi === -1) {
     return // no -c argument
@@ -40,8 +40,4 @@ function mungeSh (workingDir, options) {
       debug('npm munge!', c)
     }
   }
-}
-
-module.exports = {
-  mungeSh
 }

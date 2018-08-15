@@ -1,19 +1,19 @@
-const assert = require('assert')
-const crypto = require('crypto')
-const fs = require('fs')
-const isWindows = require('is-windows')
-const path = require('path')
-const osHomedir = require('os-homedir')
-const mkdirp = require('mkdirp')
-const rimraf = require('rimraf')
-const signalExit = require('signal-exit')
-const {debug} = require('./debug')
-const {getExeName} = require('./exe-type')
-const {getCmdShim, getShim} = require('./shim')
+import assert from 'assert'
+import crypto from 'crypto'
+import fs from 'fs'
+import isWindows from 'is-windows'
+import path from 'path'
+import osHomedir from 'os-homedir'
+import mkdirp from 'mkdirp'
+import rimraf from 'rimraf'
+import signalExit from 'signal-exit'
+import {debug} from './debug'
+import {getExeName} from './exe-type'
+import {getCmdShim, getShim} from './shim'
 
-function withWrapContext (options, handler) {
+export function withWrapContext (options: any, handler: any) {
   return createWrapContext(options)
-    .then((ctx) => {
+    .then((ctx: any) => {
       signalExit(() => destroyWrapContextSync(ctx))
       return Promise.resolve(ctx)
         .then(handler)
@@ -24,7 +24,7 @@ function withWrapContext (options, handler) {
     })
 }
 
-function withWrapContextSync (options, handler) {
+export function withWrapContextSync (options: any, handler: any) {
   const ctx = createWrapContextSync(options)
   signalExit(() => destroyWrapContextSync(ctx))
   try {
@@ -34,7 +34,7 @@ function withWrapContextSync (options, handler) {
   }
 }
 
-function realpathMkdirp (path) {
+function realpathMkdirp (path: string): Promise<string> {
   const mkdirpPromise = new Promise((resolve, reject) => {
     mkdirp(path, (err) => {
       if (err !== null) {
@@ -45,7 +45,7 @@ function realpathMkdirp (path) {
     })
   })
   return mkdirpPromise.then(() => {
-    return new Promise((resolve, reject) => {
+    return new Promise<string>((resolve, reject) => {
       fs.realpath(path, (err, res) => {
         if (err !== null) {
           reject(err)
@@ -57,7 +57,7 @@ function realpathMkdirp (path) {
   })
 }
 
-function realpathMkdirpSync (path) {
+function realpathMkdirpSync (path: string): string {
   mkdirp.sync(path)
   return fs.realpathSync(path)
 }
@@ -70,9 +70,9 @@ function getShimRoot () {
   return path.join(osHomedir(), '.node-spawn-wrap')
 }
 
-function createWrapContext (options) {
+export function createWrapContext (options: any): any {
   return new Promise(resolve => resolve(resolveOptions(options)))
-    .then((resolved) => {
+    .then((resolved: any) => {
       return realpathMkdirp(resolved.shimDir)
         .then(shimDirRealPath => {
           resolved.shimDir = shimDirRealPath
@@ -86,7 +86,7 @@ function createWrapContext (options) {
     })
 }
 
-function createWrapContextSync (options) {
+export function createWrapContextSync (options: any): any {
   const resolved = resolveOptions(options)
   resolved.shimDir = realpathMkdirpSync(resolved.shimDir)
   const context = resolvedOptionsToContext(resolved)
@@ -94,7 +94,7 @@ function createWrapContextSync (options) {
   return context
 }
 
-function destroyWrapContext (ctx) {
+export function destroyWrapContext (ctx: any): Promise<void> {
   return new Promise((resolve, reject) => {
     return rimraf(ctx.shimDir, (err) => {
       if (err !== null) {
@@ -106,7 +106,7 @@ function destroyWrapContext (ctx) {
   })
 }
 
-function destroyWrapContextSync (ctx) {
+export function destroyWrapContextSync (ctx: any): void {
   rimraf.sync(ctx.shimDir)
 }
 
@@ -115,7 +115,7 @@ function destroyWrapContextSync (ctx) {
  * @param options {{args?: string[], env?: object, shimRoot?: string}}
  * @return {{key: string, shimDir: string | *}}
  */
-function resolveOptions (options) {
+function resolveOptions (options: any) {
   assert(
     !(options.args === undefined && options.env === undefined),
     'at least one of "args" or "env" is required'
@@ -166,7 +166,7 @@ function resolveOptions (options) {
   }
 }
 
-function resolvedOptionsToContext (resolved) {
+function resolvedOptionsToContext (resolved: any) {
   return Object.freeze({
     module: require.resolve('./index'),
     deps: Object.freeze({
@@ -186,7 +186,7 @@ function resolvedOptionsToContext (resolved) {
   })
 }
 
-function writeWrapContext (context) {
+function writeWrapContext (context: any) {
   const promises = []
 
   const names = new Set(['node', getExeName(context.root.execPath)])
@@ -206,7 +206,7 @@ function writeWrapContext (context) {
   return Promise.all(promises).then(() => undefined)
 }
 
-function writeWrapContextSync (context) {
+function writeWrapContextSync (context: any): void {
   const names = new Set(['node', getExeName(context.root.execPath)])
 
   const shim = getShim(context)
@@ -222,18 +222,18 @@ function writeWrapContextSync (context) {
   }
 }
 
-function writeExecutable (path, content) {
+function writeExecutable (path: string, content: string) {
   return writeFile(path, content, 'utf8')
     .then(() => chmod(path, '0755'))
 }
 
-function writeExecutableSync (path, content) {
+function writeExecutableSync (path: string, content: string) {
   fs.writeFileSync(path, content, 'utf8')
   fs.chmodSync(path, '0755')
 }
 
 // Promise-based `fs.writeFile`
-function writeFile (path, content, encoding) {
+function writeFile (path: string, content: string, encoding: string) {
   return new Promise((resolve, reject) => {
     fs.writeFile(path, content, encoding, (err) => {
       if (err) {
@@ -246,7 +246,7 @@ function writeFile (path, content, encoding) {
 }
 
 // Promise-based `fs.chmod`
-function chmod (path, mode) {
+function chmod (path: string, mode: string | number) {
   return new Promise((resolve, reject) => {
     fs.chmod(path, mode, (err) => {
       if (err) {
@@ -256,13 +256,4 @@ function chmod (path, mode) {
       }
     })
   })
-}
-
-module.exports = {
-  withWrapContext,
-  withWrapContextSync,
-  createWrapContext,
-  createWrapContextSync,
-  destroyWrapContext,
-  destroyWrapContextSync
 }

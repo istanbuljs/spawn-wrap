@@ -1,8 +1,8 @@
-const path = require('path')
-const {debug} = require('../debug')
-const {whichOrUndefined} = require('../which-or-undefined')
+import path from "path"
+import {debug} from "../debug";
+import {whichOrUndefined} from "../which-or-undefined";
 
-function mungeNode (workingDir, options) {
+export function mungeNode (workingDir: string, options: any) {
   options.originalNode = options.file
   const command = path.basename(options.file).replace(/\.exe$/i, '')
   // make sure it has a main script.
@@ -56,8 +56,4 @@ function mungeNode (workingDir, options) {
   }
 
   debug('mungeNode after', options.file, options.args)
-}
-
-module.exports = {
-  mungeNode
 }

@@ -2,11 +2,16 @@
   "name": "spawn-wrap",
   "version": "1.4.2",
   "description": "Wrap all spawned Node.js child processes by adding environs and arguments ahead of the main JavaScript file argument.",
-  "main": "src/lib/index.js",
+  "main": "build/lib/index.js",
   "engines": {
     "node": ">=8.0.0"
   },
   "dependencies": {
+    "@types/is-windows": "^0.2.0",
+    "@types/mkdirp": "^0.5.2",
+    "@types/os-homedir": "^1.0.0",
+    "@types/rimraf": "^2.0.2",
+    "@types/which": "^1.3.1",
     "foreground-child": "^1.5.6",
     "is-windows": "^1.0.2",
     "mkdirp": "^0.5.0",
@@ -16,12 +21,15 @@
     "which": "^1.3.0"
   },
   "scripts": {
+    "build": "npm run build:shim && npm run build:lib",
+    "build:lib": "tsc -p src/lib",
     "build:shim": "tsc -p src/shim",
     "clean": "rm -rf ~/.node-spawn-wrap",
     "posttest": "standard",
     "postpublish": "git push origin --all; git push origin --tags",
     "postversion": "npm publish",
-    "prepare": "tsc -p src/lib",
+    "prepare": "npm run build",
+    "pretest": "npm run build",
     "preversion": "npm test",
     "test": "tap \"test/*.js\""
   },

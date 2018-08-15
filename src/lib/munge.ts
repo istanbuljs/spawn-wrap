@@ -1,17 +1,17 @@
-const path = require('path')
-const {isCmd, isNode, isNpm, isSh} = require('./exe-type')
-const {mungeCmd} = require('./mungers/cmd')
-const {mungeEnv} = require('./mungers/env')
-const {mungeNode} = require('./mungers/node')
-const {mungeNpm} = require('./mungers/npm')
-const {mungeSh} = require('./mungers/sh')
-const {mungeShebang} = require('./mungers/shebang')
+import path from 'path'
+import {isCmd, isNode, isNpm, isSh} from './exe-type'
+import {mungeCmd} from './mungers/cmd'
+import {mungeEnv} from './mungers/env'
+import {mungeNode} from './mungers/node'
+import {mungeNpm} from './mungers/npm'
+import {mungeSh} from './mungers/sh'
+import {mungeShebang} from './mungers/shebang'
 
 /**
  * childProcess.ChildProcess.prototype.spawn
  * process.binding('spawn_sync').spawn
  */
-function internalMunge (workingDir, options) {
+export function internalMunge (workingDir: string, options: any) {
   options.basename = path.basename(options.file).replace(/\.exe$/i, '')
 
   // XXX: dry this
@@ -39,19 +39,13 @@ function internalMunge (workingDir, options) {
 /**
  * childProcess.spawn
  */
-function spawnMunge (workingDir, options) {
+export function spawnMunge (workingDir: string, options: any) {
   throw new Error('NotImplemented')
 }
 
 /**
  * childProcess.spawnSync
  */
-function spawnSyncMunge (workingDir, options) {
+export function spawnSyncMunge (workingDir: string, options: any) {
   throw new Error('NotImplemented')
-}
-
-module.exports = {
-  internalMunge,
-  spawnMunge,
-  spawnSyncMunge
 }

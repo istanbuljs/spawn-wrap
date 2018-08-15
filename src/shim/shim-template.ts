@@ -24,12 +24,12 @@ declare const context: any;
 
   const doDebug = process.env.SPAWN_WRAP_DEBUG === '1'
 
-  function debug (format: string, ...param: any[]) {
+  function debug (format: string, ...params: any[]) {
     if (!doDebug) {
       return
     }
 
-    var message = util.format(format, ...param).trim()
+    var message = util.format(format, ...params).trim()
     var pref = 'SW ' + process.pid + ': '
     message = pref + message.split('\n').join('\n' + pref)
     fs.writeSync(2, message + '\n')

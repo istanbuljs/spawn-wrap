@@ -1,25 +1,26 @@
-const fs = require('fs')
-const path = require('path')
+import fs from 'fs'
+import path from 'path'
 
 const SHIM_TEMPLATE_PATH = path.join(__dirname, '..', '..', 'build', 'shim', 'shim-template.js')
 const SHIM_TEMPLATE = fs.readFileSync(SHIM_TEMPLATE_PATH, 'utf8')
 
-function getShebang (execPath) {
-  const prefix = process.platform === 'os390' ? '#!/bin/env ' : '#!'
+function getShebang (execPath: string): string {
+  // TODO: Remove the conditional? `os390` seems to be invalid
+  const prefix = (process.platform as string) === 'os390' ? '#!/bin/env ' : '#!'
   return `${prefix}${execPath}\n`
 }
 
-function getShim (wrapContext) {
-  const shebangLine = getShebang(wrapContext.root.execPath)
-  const contextJson = JSON.stringify(wrapContext, null, 2)
+export function getShim (ctx: any) {
+  const shebangLine = getShebang(ctx.root.execPath)
+  const contextJson = JSON.stringify(ctx, null, 2)
   const contextLines = `const context = ${contextJson};\n`
   const shimBody = SHIM_TEMPLATE.replace('/* shim-template-include: context */\n', contextLines)
   return `${shebangLine}${shimBody}`
 
 }
 
-function getCmdShim (wrapContext) {
-  const execPath = wrapContext.root.execPath
+export function getCmdShim (ctx: any) {
+  const execPath = ctx.root.execPath
 
   // TODO: Is `execPath` properly escaped?
   const cmdShim =
@@ -29,9 +30,4 @@ function getCmdShim (wrapContext) {
     '"' + execPath + '"' + ' "%~dp0\\.\\node" %*\r\n'
 
   return cmdShim
-}
-
-module.exports = {
-  getShim,
-  getCmdShim
 }

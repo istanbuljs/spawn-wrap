@@ -1,9 +1,9 @@
-const fs = require('fs')
-const path = require('path')
-const {isNode} = require('../exe-type')
-const {whichOrUndefined} = require('../which-or-undefined')
+import fs from 'fs'
+import path from 'path'
+import {isNode} from '../exe-type'
+import {whichOrUndefined} from '../which-or-undefined'
 
-function mungeShebang (workingDir, options) {
+export function mungeShebang (workingDir: string, options: any) {
   const resolved = whichOrUndefined(options.file)
   if (resolved === undefined) {
     return
@@ -28,8 +28,4 @@ function mungeShebang (workingDir, options) {
     .concat(resolved)
     .concat(match[1].split(' ').slice(1))
     .concat(options.args.slice(1))
-}
-
-module.exports = {
-  mungeShebang
 }

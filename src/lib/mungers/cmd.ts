@@ -1,7 +1,7 @@
-const path = require('path')
-const {whichOrUndefined} = require('../which-or-undefined')
+import path from "path";
+import {whichOrUndefined} from "../which-or-undefined";
 
-function mungeCmd (workingDir, options) {
+export function mungeCmd (workingDir: string, options: any) {
   const cmdi = options.args.indexOf('/c')
   if (cmdi === -1) {
     return
@@ -39,8 +39,4 @@ function mungeCmd (workingDir, options) {
       m[3] + m[4]
     options.args[cmdi + 1] = command.replace(npmre, replace)
   }
-}
-
-module.exports = {
-  mungeCmd
 }
