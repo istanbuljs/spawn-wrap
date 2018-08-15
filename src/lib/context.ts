@@ -11,9 +11,85 @@ import { debug } from "./debug";
 import { getExeName } from "./exe-type";
 import { getCmdShim, getShim } from "./shim";
 
-export function withWrapContext(options: any, handler: any) {
+const DEFAULT_SHIM_ROOT_NAME = ".node-spawn-wrap";
+const SHIM_ROOT_ENV_VAR = "SPAWN_WRAP_SHIM_ROOT";
+
+/**
+ * Spawn wrap context.
+ */
+export interface SwContext {
+  /**
+   * Absolute system path for the `spawn-wrap` main module.
+   */
+  readonly module: string;
+
+  /**
+   * Absolute system path for the corresponding dependencies.
+   */
+  readonly deps: Readonly<Record<"foregroundChild" | "isWindows" | "signalExit", string>>;
+
+  /**
+   * Unique key identifying this context.
+   */
+  readonly key: string;
+
+  /**
+   * Directory containing the shims.
+   */
+  readonly shimDir: string;
+
+  readonly args: ReadonlyArray<string>;
+
+  readonly execArgs: ReadonlyArray<string>;
+
+  readonly env: Readonly<Record<string, string>>;
+
+  /**
+   * Information about the root process.
+   *
+   * The root process is the process that created the context.
+   */
+  readonly root: {
+    readonly execPath: string;
+    readonly pid: number;
+  };
+}
+
+export interface SwOptions {
+  /**
+   * Node arguments for the wrapper.
+   */
+  args?: string[];
+
+  /**
+   * Additional environment variables.
+   */
+  env?: Record<string, string>;
+
+  /**
+   * Location where the shim directories will be created.
+   *
+   * Default:
+   * - If the env var `SPAWN_WRAP_SHIM_ROOT`, use its value
+   * - Otherwise, `.node-spawn-wrap` directory inside user's home dir.
+   */
+  shimRoot?: string;
+}
+
+/**
+ * @internal
+ */
+interface ResolvedOptions {
+  args: string[];
+  env: Record<string, string>;
+  execArgs: string[];
+  key: string;
+  shimDir: string;
+}
+
+export function withWrapContext<R = any>(options: SwOptions, handler: (ctx: SwContext) => Promise<R>): Promise<R> {
   return createWrapContext(options)
-    .then((ctx: any) => {
+    .then((ctx: SwContext) => {
       signalExit(() => destroyWrapContextSync(ctx));
       return Promise.resolve(ctx)
         .then(handler)
@@ -24,7 +100,7 @@ export function withWrapContext(options: any, handler: any) {
     });
 }
 
-export function withWrapContextSync(options: any, handler: any) {
+export function withWrapContextSync<R = any>(options: SwOptions, handler: (ctx: SwContext) => R): R {
   const ctx = createWrapContextSync(options);
   signalExit(() => destroyWrapContextSync(ctx));
   try {
@@ -34,6 +110,12 @@ export function withWrapContextSync(options: any, handler: any) {
   }
 }
 
+/**
+ * Creates a directory (recursively) and returns its real path.
+ *
+ * @param path Path of the directory to create.
+ * @return Real path of the directory.
+ */
 function realpathMkdirp(path: string): Promise<string> {
   const mkdirpPromise = new Promise((resolve, reject) => {
     mkdirp(path, (err) => {
@@ -57,22 +139,32 @@ function realpathMkdirp(path: string): Promise<string> {
   });
 }
 
+/**
+ * Synchronous version of [[realpathMkdirp]].
+ */
 function realpathMkdirpSync(path: string): string {
   mkdirp.sync(path);
   return fs.realpathSync(path);
 }
 
-function getShimRoot() {
-  const envShimRoot = process.env.SPAWN_WRAP_SHIM_ROOT;
+/**
+ * Retuns the default shim root.
+ *
+ * If the environment variable `SPAWN_WRAP_SHIM_ROOT` is defined, it returns
+ * its value. Otherwise, it returns the directory `.node-spawn-wrap` in the
+ * user's home.
+ */
+function getShimRoot(): string {
+  const envShimRoot = process.env[SHIM_ROOT_ENV_VAR];
   if (envShimRoot !== undefined) {
     return envShimRoot;
   }
-  return path.join(osHomedir(), ".node-spawn-wrap");
+  return path.join(osHomedir(), DEFAULT_SHIM_ROOT_NAME);
 }
 
-export function createWrapContext(options: any): any {
-  return new Promise((resolve) => resolve(resolveOptions(options)))
-    .then((resolved: any) => {
+export function createWrapContext(options: SwOptions): Promise<SwContext> {
+  return new Promise<ResolvedOptions>((resolve) => resolve(resolveOptions(options)))
+    .then((resolved: ResolvedOptions) => {
       return realpathMkdirp(resolved.shimDir)
         .then((shimDirRealPath) => {
           resolved.shimDir = shimDirRealPath;
@@ -80,21 +172,21 @@ export function createWrapContext(options: any): any {
         });
     })
     .then(resolvedOptionsToContext)
-    .then((context) => {
-      return writeWrapContext(context)
-        .then(() => context);
+    .then((ctx) => {
+      return writeWrapContext(ctx)
+        .then(() => ctx);
     });
 }
 
-export function createWrapContextSync(options: any): any {
+export function createWrapContextSync(options: SwOptions): SwContext {
   const resolved = resolveOptions(options);
   resolved.shimDir = realpathMkdirpSync(resolved.shimDir);
-  const context = resolvedOptionsToContext(resolved);
-  writeWrapContextSync(context);
-  return context;
+  const ctx = resolvedOptionsToContext(resolved);
+  writeWrapContextSync(ctx);
+  return ctx;
 }
 
-export function destroyWrapContext(ctx: any): Promise<void> {
+export function destroyWrapContext(ctx: SwContext): Promise<void> {
   return new Promise((resolve, reject) => {
     return rimraf(ctx.shimDir, (err) => {
       if (err !== null) {
@@ -106,7 +198,7 @@ export function destroyWrapContext(ctx: any): Promise<void> {
   });
 }
 
-export function destroyWrapContextSync(ctx: any): void {
+export function destroyWrapContextSync(ctx: SwContext): void {
   rimraf.sync(ctx.shimDir);
 }
 
@@ -115,7 +207,7 @@ export function destroyWrapContextSync(ctx: any): void {
  * @param options {{args?: string[], env?: object, shimRoot?: string}}
  * @return {{key: string, shimDir: string | *}}
  */
-function resolveOptions(options: any) {
+function resolveOptions(options: SwOptions): ResolvedOptions {
   assert(
     !(options.args === undefined && options.env === undefined),
     "at least one of \"args\" or \"env\" is required",
@@ -166,7 +258,7 @@ function resolveOptions(options: any) {
   };
 }
 
-function resolvedOptionsToContext(resolved: any) {
+function resolvedOptionsToContext(resolved: ResolvedOptions): SwContext {
   return Object.freeze({
     module: require.resolve("./index"),
     deps: Object.freeze({
@@ -178,7 +270,7 @@ function resolvedOptionsToContext(resolved: any) {
     shimDir: resolved.shimDir,
     args: Object.freeze(resolved.args),
     execArgs: Object.freeze(resolved.execArgs),
-    env: resolved.env,
+    env: Object.freeze(resolved.env),
     root: Object.freeze({
       execPath: process.execPath,
       pid: process.pid,
@@ -186,54 +278,54 @@ function resolvedOptionsToContext(resolved: any) {
   });
 }
 
-function writeWrapContext(context: any) {
+function writeWrapContext(ctx: SwContext): Promise<void> {
   const promises = [];
 
-  const names = new Set(["node", getExeName(context.root.execPath)]);
+  const names = new Set(["node", getExeName(ctx.root.execPath)]);
 
-  const shim = getShim(context);
+  const shim = getShim(ctx);
   for (const name of names) {
-    promises.push(writeExecutable(path.join(context.shimDir, name), shim));
+    promises.push(writeExecutable(path.join(ctx.shimDir, name), shim));
   }
 
   if (isWindows()) {
-    const cmdShim = getCmdShim(context);
+    const cmdShim = getCmdShim(ctx);
     for (const name of names) {
-      promises.push(writeExecutable(path.join(context.shimDir, `${name}.cmd`), cmdShim));
+      promises.push(writeExecutable(path.join(ctx.shimDir, `${name}.cmd`), cmdShim));
     }
   }
 
   return Promise.all(promises).then(() => undefined);
 }
 
-function writeWrapContextSync(context: any): void {
-  const names = new Set(["node", getExeName(context.root.execPath)]);
+function writeWrapContextSync(ctx: SwContext): void {
+  const names = new Set(["node", getExeName(ctx.root.execPath)]);
 
-  const shim = getShim(context);
+  const shim = getShim(ctx);
   for (const name of names) {
-    writeExecutableSync(path.join(context.shimDir, name), shim);
+    writeExecutableSync(path.join(ctx.shimDir, name), shim);
   }
 
   if (isWindows()) {
-    const cmdShim = getCmdShim(context);
+    const cmdShim = getCmdShim(ctx);
     for (const name of names) {
-      writeExecutableSync(path.join(context.shimDir, `${name}.cmd`), cmdShim);
+      writeExecutableSync(path.join(ctx.shimDir, `${name}.cmd`), cmdShim);
     }
   }
 }
 
-function writeExecutable(path: string, content: string) {
+function writeExecutable(path: string, content: string): Promise<void> {
   return writeFile(path, content, "utf8")
     .then(() => chmod(path, "0755"));
 }
 
-function writeExecutableSync(path: string, content: string) {
+function writeExecutableSync(path: string, content: string): void {
   fs.writeFileSync(path, content, "utf8");
   fs.chmodSync(path, "0755");
 }
 
-// Promise-based `fs.writeFile`
-function writeFile(path: string, content: string, encoding: string) {
+// Promise-based `fs.writeFile`, restricted to text files
+function writeFile(path: string, content: string, encoding: string): Promise<void> {
   return new Promise((resolve, reject) => {
     fs.writeFile(path, content, encoding, (err) => {
       if (err) {
@@ -246,7 +338,7 @@ function writeFile(path: string, content: string, encoding: string) {
 }
 
 // Promise-based `fs.chmod`
-function chmod(path: string, mode: string | number) {
+function chmod(path: string, mode: string | number): Promise<void> {
   return new Promise((resolve, reject) => {
     fs.chmod(path, mode, (err) => {
       if (err) {
