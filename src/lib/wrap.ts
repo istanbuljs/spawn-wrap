@@ -1,3 +1,4 @@
+import cp from "child_process";
 import { SwContext } from "./context";
 import { debug } from "./debug";
 import { internalMunge } from "./munge";
@@ -20,8 +21,8 @@ export function wrapInternalSpawn(fn: any, ctx: SwContext) {
 /**
  * childProcess.spawn
  */
-export function wrapSpawn(fn: any, ctx: SwContext) {
-  return wrappedSpawnSync;
+export function wrapSpawn(fn: typeof cp.spawn, ctx: SwContext): typeof cp.spawn {
+  return wrappedSpawnSync as typeof cp.spawn;
 
   function wrappedSpawnSync(...args: any[]) {
     throw new Error("NotImplemented");
@@ -31,8 +32,8 @@ export function wrapSpawn(fn: any, ctx: SwContext) {
 /**
  * childProcess.spawnSync
  */
-export function wrapSpawnSync(fn: any, ctx: SwContext) {
-  return wrappedSpawnSync;
+export function wrapSpawnSync(fn: typeof cp.spawnSync, ctx: SwContext): typeof cp.spawnSync {
+  return wrappedSpawnSync as typeof cp.spawnSync;
 
   function wrappedSpawnSync(...args: any[]) {
     throw new Error("NotImplemented");
