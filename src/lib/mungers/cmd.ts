@@ -1,13 +1,13 @@
 import path from "path";
 import { SwContext } from "../context";
-import { InternalSpawnOptions } from "../types";
+import { NormalizedOptions } from "../types";
 import { whichOrUndefined } from "../which-or-undefined";
 
 const NODE_RE = /^\s*("*)([^"]*?\bnode(?:\.exe)?)("*)((?:\s.*)?)$/i;
 const NPM_RE = /^\s*("*)(?:[^"]*?\b(?:npm))("*)(\s|$)/i;
 
 // TODO: Find a lib to properly parse and print `cmd` commands.
-export function mungeCmd(ctx: SwContext, options: Readonly<InternalSpawnOptions>): InternalSpawnOptions {
+export function mungeCmd(ctx: SwContext, options: NormalizedOptions): NormalizedOptions {
   const cmdFlagIndex: number = options.args.indexOf("/c");
   if (cmdFlagIndex < 0) {
     return options;

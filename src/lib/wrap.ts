@@ -1,7 +1,6 @@
 import cp from "child_process";
 import { SwContext } from "./context";
-import { debug } from "./debug";
-import { internalMunge } from "./munge";
+import { mungeInternal, mungeSpawn } from "./munge";
 import { InternalSpawnOptions } from "./types";
 
 /**
@@ -9,33 +8,26 @@ import { InternalSpawnOptions } from "./types";
  * process.binding('spawn_sync').spawn
  */
 export function wrapInternalSpawn(fn: any, ctx: SwContext) {
-  return wrappedSpawn;
+  return wrappedInternalSpawn;
 
-  function wrappedSpawn(this: any, options: Readonly<InternalSpawnOptions>): any {
-    options = internalMunge(ctx, options);
-    debug("WRAPPED", options);
-    return fn.call(this, options);
+  function wrappedInternalSpawn(this: any, options: Readonly<InternalSpawnOptions>): any {
+    return fn.call(this, mungeInternal(ctx, options));
   }
 }
 
 /**
  * childProcess.spawn
- */
-export function wrapSpawn(fn: typeof cp.spawn, ctx: SwContext): typeof cp.spawn {
-  return wrappedSpawnSync as typeof cp.spawn;
-
-  function wrappedSpawnSync(...args: any[]) {
-    throw new Error("NotImplemented");
-  }
-}
-
-/**
  * childProcess.spawnSync
  */
-export function wrapSpawnSync(fn: typeof cp.spawnSync, ctx: SwContext): typeof cp.spawnSync {
-  return wrappedSpawnSync as typeof cp.spawnSync;
+export function wrapSpawn<F extends (typeof cp.spawn | typeof cp.spawnSync)>(ctx: SwContext, fn: F): F {
+  return wrappedSpawn as F;
 
-  function wrappedSpawnSync(...args: any[]) {
-    throw new Error("NotImplemented");
+  function wrappedSpawn(
+    this: any,
+    file: string,
+    args?: ReadonlyArray<string>,
+    options?: cp.SpawnOptions | cp.SpawnSyncOptions,
+  ): any {
+    return fn.call(this, ...mungeSpawn(ctx, [file, args, options]));
   }
 }

@@ -2,10 +2,10 @@ import path from "path";
 import { SwContext } from "../context";
 import { debug } from "../debug";
 import { getExeBasename } from "../exe-type";
-import { InternalSpawnOptions } from "../types";
+import { NormalizedOptions } from "../types";
 import { whichOrUndefined } from "../which-or-undefined";
 
-export function mungeNode(ctx: SwContext, options: Readonly<InternalSpawnOptions>): InternalSpawnOptions {
+export function mungeNode(ctx: SwContext, options: NormalizedOptions): NormalizedOptions {
   const cmdBasename: string = getExeBasename(options.file);
   // make sure it has a main script.
   // otherwise, just let it through.

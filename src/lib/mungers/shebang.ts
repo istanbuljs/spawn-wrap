@@ -2,10 +2,10 @@ import fs from "fs";
 import path from "path";
 import { SwContext } from "../context";
 import { isNode } from "../exe-type";
-import { InternalSpawnOptions } from "../types";
+import { NormalizedOptions } from "../types";
 import { whichOrUndefined } from "../which-or-undefined";
 
-export function mungeShebang(ctx: SwContext, options: InternalSpawnOptions): InternalSpawnOptions {
+export function mungeShebang(ctx: SwContext, options: NormalizedOptions): NormalizedOptions {
   const resolved = whichOrUndefined(options.file);
   if (resolved === undefined) {
     return options;

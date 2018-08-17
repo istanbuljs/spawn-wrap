@@ -1,31 +1,31 @@
 import cp from "child_process";
 import { SwContext, SwOptions, withWrapContextSync } from "./context";
-import { wrapSpawn, wrapSpawnSync } from "./wrap";
+import { wrapSpawn } from "./wrap";
 
 export type SyncApi = Pick<typeof cp, "spawnSync">;
 export type Api = SyncApi & Pick<typeof cp, "spawn">;
 
 export function withSpawnWrap<R = any>(options: SwOptions, handler: (api: Api) => Promise<R>): Promise<R> {
-  return withWrapContextSync(options, (ctx: any) => {
-    return handler(createApi(ctx));
+  return withWrapContextSync(options, (ctx: SwContext) => {
+    return handler(wrapApi(ctx));
   });
 }
 
 export function withSpawnWrapSync<R = any>(options: SwOptions, handler: (api: SyncApi) => R): R {
-  return withWrapContextSync(options, (ctx: any) => {
-    return handler(createSyncApi(ctx));
+  return withWrapContextSync(options, (ctx: SwContext) => {
+    return handler(wrapSyncApi(ctx));
   });
 }
 
-function createApi(ctx: SwContext): Api {
+function wrapApi(ctx: SwContext, api: Api = cp): Api {
   return {
-    ...createSyncApi(ctx),
-    spawn: wrapSpawn(cp.spawn, ctx),
+    ...wrapSyncApi(ctx, api),
+    spawn: wrapSpawn(ctx, api.spawn.bind(api)),
   };
 }
 
-function createSyncApi(ctx: SwContext): SyncApi {
+function wrapSyncApi(ctx: SwContext, api: Api = cp): SyncApi {
   return {
-    spawnSync: wrapSpawnSync(cp.spawnSync, ctx),
+    spawnSync: wrapSpawn(ctx, api.spawnSync.bind(api)),
   };
 }

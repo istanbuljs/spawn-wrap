@@ -3,12 +3,12 @@ import path from "path";
 import { SwContext } from "../context";
 import { debug } from "../debug";
 import { getExeBasename, isNode } from "../exe-type";
-import { InternalSpawnOptions } from "../types";
+import { NormalizedOptions } from "../types";
 import { whichOrUndefined } from "../which-or-undefined";
 
 const CMD_RE = /^\s*((?:[^= ]*=[^=\s]*)*[\s]*)([^\s]+|"[^"]+"|'[^']+')( .*)?$/;
 
-export function mungeSh(ctx: SwContext, options: Readonly<InternalSpawnOptions>): InternalSpawnOptions {
+export function mungeSh(ctx: SwContext, options: NormalizedOptions): NormalizedOptions {
   const cmdFlagIndex: number = options.args.indexOf("-c");
   if (cmdFlagIndex < 0) {
     // No `-c` argument

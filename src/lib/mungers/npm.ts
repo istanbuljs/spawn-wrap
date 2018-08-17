@@ -1,10 +1,10 @@
 import path from "path";
 import { SwContext } from "../context";
 import { debug } from "../debug";
-import { InternalSpawnOptions } from "../types";
+import { NormalizedOptions } from "../types";
 import { whichOrUndefined } from "../which-or-undefined";
 
-export function mungeNpm(ctx: SwContext, options: Readonly<InternalSpawnOptions>): InternalSpawnOptions {
+export function mungeNpm(ctx: SwContext, options: NormalizedOptions): NormalizedOptions {
   debug("munge npm");
   // XXX weird effects of replacing a specific npm with a global one
   const npmPath = whichOrUndefined("npm");
