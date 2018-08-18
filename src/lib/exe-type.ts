@@ -7,7 +7,7 @@ export function isCmd(file: string): boolean {
 }
 
 export function isNode(file: string): boolean {
-  const cmdname = path.basename(process.execPath).replace(/\.exe$/i, "");
+  const cmdname = getExeBasename(process.execPath);
   return file === "node" || cmdname === file;
 }
 

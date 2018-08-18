@@ -1,7 +1,6 @@
 import fs from "fs";
-import path from "path";
 import { SwContext } from "../context";
-import { isNode } from "../exe-type";
+import { getExeBasename, isNode } from "../exe-type";
 import { NormalizedOptions } from "../types";
 import { whichOrUndefined } from "../which-or-undefined";
 
@@ -19,7 +18,7 @@ export function mungeShebang(ctx: SwContext, options: NormalizedOptions): Normal
   }
 
   const shebangExe = match[1].split(" ")[0];
-  const maybeNode = path.basename(shebangExe);
+  const maybeNode = getExeBasename(shebangExe);
   if (!isNode(maybeNode)) {
     // not a node shebang, leave untouched
     return options;
@@ -28,8 +27,7 @@ export function mungeShebang(ctx: SwContext, options: NormalizedOptions): Normal
   // options.originalNode = shebangExe;
   // options.basename = maybeNode;
   const newFile: string = shebangExe;
-  const nodeShim: string = path.join(ctx.shimDir, "node");
-  const newArgs = [shebangExe, nodeShim]
+  const newArgs = [shebangExe, ctx.shimScript]
     .concat(resolved)
     .concat(match[1].split(" ").slice(1))
     .concat(options.args.slice(1));

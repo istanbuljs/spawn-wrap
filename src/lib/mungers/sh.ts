@@ -1,5 +1,4 @@
 import isWindows from "is-windows";
-import path from "path";
 import { SwContext } from "../context";
 import { debug } from "../debug";
 import { getExeBasename, isNode } from "../exe-type";
@@ -40,17 +39,16 @@ export function mungeSh(ctx: SwContext, options: NormalizedOptions): NormalizedO
 
   const newArgs: string[] = [...options.args];
 
-  const nodeShim: string = path.join(ctx.shimDir, "node");
   if (isNode(exe)) {
     // options.originalNode = command;
-    newArgs[cmdIndex] = `${prefix}${rawCommand} "${nodeShim}" ${tail}`;
+    newArgs[cmdIndex] = `${prefix}${rawCommand} "${ctx.shimScript}" ${tail}`;
   } else if (exe === "npm" && !isWindows()) {
     // XXX this will exhibit weird behavior when using /path/to/npm,
     // if some other npm is first in the path.
     const npmPath = whichOrUndefined("npm");
 
     if (npmPath) {
-      newArgs[cmdIndex] = c.replace(CMD_RE, `$1 "${nodeShim}" "${npmPath}" $3`);
+      newArgs[cmdIndex] = c.replace(CMD_RE, `$1 "${ctx.shimExecutable}" "${npmPath}" $3`);
       debug("npm munge!", newArgs[cmdIndex]);
     }
   }

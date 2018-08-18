@@ -38,6 +38,31 @@ export interface SwContext {
    */
   readonly shimDir: string;
 
+  /**
+   * Path to the canonical shim script.
+   *
+   * You can use it when invoking the real node:
+   * ```
+   * spawn(process.execPath, [shimScript, "foo.js"])
+   * ```
+   *
+   * This corresponds to `node` inside the shimDir.
+   */
+  readonly shimScript: string;
+
+  /**
+   * Path to the canonical shim executable.
+   *
+   * You can use it instead of the real node:
+   * ```
+   * spawn(shimExecutable, ["foo.js"])
+   * ```
+   *
+   * This corresponds to `node` or `node.cmd` inside the shimDir (depending on
+   * the platform).
+   */
+  readonly shimExecutable: string;
+
   readonly args: ReadonlyArray<string>;
 
   readonly execArgs: ReadonlyArray<string>;
@@ -258,6 +283,8 @@ function resolvedOptionsToContext(resolved: ResolvedOptions): SwContext {
     }),
     key: resolved.key,
     shimDir: resolved.shimDir,
+    shimScript: path.join(resolved.shimDir, "node"),
+    shimExecutable: path.join(resolved.shimDir, isWindows() ? "node.cmd" : "node"),
     args: Object.freeze(resolved.args),
     execArgs: Object.freeze(resolved.execArgs),
     env: Object.freeze(resolved.env),

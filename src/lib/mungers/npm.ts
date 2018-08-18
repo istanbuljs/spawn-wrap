@@ -1,4 +1,3 @@
-import path from "path";
 import { SwContext } from "../context";
 import { debug } from "../debug";
 import { NormalizedOptions } from "../types";
@@ -12,7 +11,6 @@ export function mungeNpm(ctx: SwContext, options: NormalizedOptions): Normalized
   if (npmPath === undefined) {
     return options;
   }
-  const nodeShim = path.join(ctx.shimDir, "node");
-  const newArgs: string[] = [nodeShim, npmPath].concat(options.args.slice(1));
-  return {...options, file: nodeShim, args: newArgs};
+  const newArgs: string[] = [ctx.shimExecutable, npmPath].concat(options.args.slice(1));
+  return {...options, file: ctx.shimExecutable, args: newArgs};
 }

@@ -1,4 +1,3 @@
-import path from "path";
 import { SwContext } from "../context";
 import { debug } from "../debug";
 import { getExeBasename } from "../exe-type";
@@ -45,8 +44,7 @@ export function mungeNode(ctx: SwContext, options: NormalizedOptions): Normalize
   let newFile: string = options.file;
 
   if (mainIndex !== undefined) {
-    const replacement = path.join(ctx.shimDir, cmdBasename);
-    newArgs.splice(mainIndex, 0, replacement);
+    newArgs.splice(mainIndex, 0, ctx.shimExecutable);
   }
 
   // If the file is just something like 'node' then that'll

@@ -1,5 +1,6 @@
 import fs from "fs";
 import path from "path";
+import { SwContext } from "./context";
 
 const SHIM_TEMPLATE_PATH = path.join(__dirname, "..", "..", "build", "shim", "shim-template.js");
 const SHIM_TEMPLATE = fs.readFileSync(SHIM_TEMPLATE_PATH, "utf8");
@@ -10,7 +11,7 @@ function getShebang(execPath: string): string {
   return `${prefix}${execPath}\n`;
 }
 
-export function getShim(ctx: any) {
+export function getShim(ctx: SwContext) {
   const shebangLine = getShebang(ctx.root.execPath);
   const contextJson = JSON.stringify(ctx, null, 2);
   const contextLines = `const context = ${contextJson};\n`;
@@ -19,7 +20,7 @@ export function getShim(ctx: any) {
 
 }
 
-export function getCmdShim(ctx: any) {
+export function getCmdShim(ctx: SwContext) {
   const execPath = ctx.root.execPath;
 
   // TODO: Is `execPath` properly escaped?

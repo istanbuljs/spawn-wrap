@@ -24,10 +24,9 @@ export function mungeCmd(ctx: SwContext, options: NormalizedOptions): Normalized
     const originalNode: string = nodeMatch[2];
     const endDelimiter: string = nodeMatch[3];
     const tail: string = nodeMatch[4];
-    const nodeShim = path.join(ctx.shimDir, "node");
 
     const newArgs: string[] = [...options.args];
-    newArgs[cmdIndex] = `${startDelimiter}${originalNode}${endDelimiter} "${nodeShim}" ${tail}`;
+    newArgs[cmdIndex] = `${startDelimiter}${originalNode}${endDelimiter} "${ctx.shimScript}" ${tail}`;
     return {...options, args: newArgs};
   }
 
@@ -51,7 +50,7 @@ export function mungeCmd(ctx: SwContext, options: NormalizedOptions): Normalized
     const endSpace: string | undefined = npmMatch[3];
     const tail: string = options.args[cmdIndex].substr(npmMatch[0].length);
 
-    const nodeShim = path.join(ctx.shimDir, "node");
+    const nodeShim = ctx.shimExecutable;
 
     const newArgs: string[] = [...options.args];
     newArgs[cmdIndex] = `${startDelimiter}${nodeShim}${endDelimiter} "${npmCli}"${endSpace}${tail}`;
