@@ -1,6 +1,23 @@
 import { withSpawnWrap, withSpawnWrapSync } from "./local";
+import { spawn as observeSpawn } from "./observable/index";
 import { applyContextOnGlobal, legacyWrap, runMain, wrapGlobal } from "./spawn-wrap";
 
-// TODO: Use `export` statements to properly generate `index.d.ts`
+// These TS exports are only there to generate the type definitions, they will be overwritten by the CJS exports below
+export {
+  applyContextOnGlobal,
+  observeSpawn,
+  runMain,
+  wrapGlobal,
+  withSpawnWrap,
+  withSpawnWrapSync,
+};
+
 module.exports = legacyWrap;
-Object.assign(module.exports, {applyContextOnGlobal, runMain, wrapGlobal, withSpawnWrap, withSpawnWrapSync});
+Object.assign(module.exports, {
+  applyContextOnGlobal,
+  observeSpawn,
+  runMain,
+  wrapGlobal,
+  withSpawnWrap,
+  withSpawnWrapSync,
+});

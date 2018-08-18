@@ -1,12 +1,12 @@
 import cp from "child_process";
-import { SwContext, SwOptions, withWrapContextSync } from "./context";
+import { SwContext, SwOptions, withWrapContext, withWrapContextSync } from "./context";
 import { wrapSpawn } from "./wrap";
 
 export type SyncApi = Pick<typeof cp, "spawnSync">;
 export type Api = SyncApi & Pick<typeof cp, "spawn">;
 
 export function withSpawnWrap<R = any>(options: SwOptions, handler: (api: Api) => Promise<R>): Promise<R> {
-  return withWrapContextSync(options, (ctx: SwContext) => {
+  return withWrapContext(options, (ctx: SwContext): Promise<R> => {
     return handler(wrapApi(ctx));
   });
 }

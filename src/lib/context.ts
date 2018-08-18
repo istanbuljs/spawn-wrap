@@ -116,8 +116,8 @@ export function withWrapContextSync<R = any>(options: SwOptions, handler: (ctx: 
  * @param path Path of the directory to create.
  * @return Real path of the directory.
  */
-function realpathMkdirp(path: string): Promise<string> {
-  const mkdirpPromise = new Promise((resolve, reject) => {
+async function realpathMkdirp(path: string): Promise<string> {
+  await new Promise((resolve, reject) => {
     mkdirp(path, (err) => {
       if (err !== null) {
         reject(err);
@@ -126,15 +126,13 @@ function realpathMkdirp(path: string): Promise<string> {
       }
     });
   });
-  return mkdirpPromise.then(() => {
-    return new Promise<string>((resolve, reject) => {
-      fs.realpath(path, (err, res) => {
-        if (err !== null) {
-          reject(err);
-        } else {
-          return res;
-        }
-      });
+  return new Promise<string>((resolve, reject) => {
+    fs.realpath(path, (err, res) => {
+      if (err !== null) {
+        reject(err);
+      } else {
+        resolve(res);
+      }
     });
   });
 }
@@ -162,20 +160,12 @@ function getShimRoot(): string {
   return path.join(osHomedir(), DEFAULT_SHIM_ROOT_NAME);
 }
 
-export function createWrapContext(options: SwOptions): Promise<SwContext> {
-  return new Promise<ResolvedOptions>((resolve) => resolve(resolveOptions(options)))
-    .then((resolved: ResolvedOptions) => {
-      return realpathMkdirp(resolved.shimDir)
-        .then((shimDirRealPath) => {
-          resolved.shimDir = shimDirRealPath;
-          return resolved;
-        });
-    })
-    .then(resolvedOptionsToContext)
-    .then((ctx) => {
-      return writeWrapContext(ctx)
-        .then(() => ctx);
-    });
+export async function createWrapContext(options: SwOptions): Promise<SwContext> {
+  const resolved = resolveOptions(options);
+  resolved.shimDir = await realpathMkdirp(resolved.shimDir);
+  const ctx = resolvedOptionsToContext(resolved);
+  await writeWrapContext(ctx);
+  return ctx;
 }
 
 export function createWrapContextSync(options: SwOptions): SwContext {
