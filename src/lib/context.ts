@@ -9,7 +9,7 @@ import rimraf from "rimraf";
 import signalExit from "signal-exit";
 import { debug } from "./debug";
 import { getExeBasename } from "./exe-type";
-import { getCmdShim, getShim } from "./shim";
+import { getCmdShim, getPreload, getShim } from "./shim";
 
 const DEFAULT_SHIM_ROOT_NAME = ".node-spawn-wrap";
 const SHIM_ROOT_ENV_VAR = "SPAWN_WRAP_SHIM_ROOT";
@@ -63,11 +63,15 @@ export interface SwContext {
    */
   readonly shimExecutable: string;
 
+  readonly preloadScript: string;
+
   readonly args: ReadonlyArray<string>;
 
   readonly execArgs: ReadonlyArray<string>;
 
   readonly env: Readonly<Record<string, string>>;
+
+  readonly mode: "run" | "spawn";
 
   /**
    * Information about the root process.
@@ -99,6 +103,13 @@ export interface SwOptions {
    * - Otherwise, `.node-spawn-wrap` directory inside user's home dir.
    */
   shimRoot?: string;
+
+  /**
+   * How you intend to execute the main script when inside the wrapper.
+   * - `run`: `spawnWrap.runMain()`
+   * - `spawn`: `spawnWrap.spawnMain()`
+   */
+  mode?: "run" | "spawn";
 }
 
 /**
@@ -110,6 +121,7 @@ interface ResolvedOptions {
   execArgs: string[];
   key: string;
   shimDir: string;
+  mode: "run" | "spawn";
 }
 
 export function withWrapContext<R = any>(options: SwOptions, handler: (ctx: SwContext) => Promise<R>): Promise<R> {
@@ -243,6 +255,7 @@ function resolveOptions(options: SwOptions): ResolvedOptions {
   const args = options.args !== undefined ? [...options.args] : [];
   const env = options.env !== undefined ? Object.assign({}, options.env) : {};
   const shimRoot = options.shimRoot !== undefined ? options.shimRoot : getShimRoot();
+  const mode: "run" | "spawn" = options.mode !== undefined ? options.mode : "run";
 
   debug("resolveOptions args=%j env=%j shimRoot=%j", args, env, shimRoot);
 
@@ -270,6 +283,7 @@ function resolveOptions(options: SwOptions): ResolvedOptions {
     env,
     key,
     shimDir,
+    mode,
   };
 }
 
@@ -285,9 +299,11 @@ function resolvedOptionsToContext(resolved: ResolvedOptions): SwContext {
     shimDir: resolved.shimDir,
     shimScript: path.join(resolved.shimDir, "node"),
     shimExecutable: path.join(resolved.shimDir, isWindows() ? "node.cmd" : "node"),
+    preloadScript: path.join(resolved.shimDir, "preload.js"),
     args: Object.freeze(resolved.args),
     execArgs: Object.freeze(resolved.execArgs),
     env: Object.freeze(resolved.env),
+    mode: resolved.mode,
     root: Object.freeze({
       execPath: process.execPath,
       pid: process.pid,
@@ -299,6 +315,8 @@ function writeWrapContext(ctx: SwContext): Promise<void> {
   const promises = [];
 
   const names = new Set(["node", getExeBasename(ctx.root.execPath)]);
+
+  promises.push(writeFile(ctx.preloadScript, getPreload(ctx), "UTF-8"));
 
   const shim = getShim(ctx);
   for (const name of names) {

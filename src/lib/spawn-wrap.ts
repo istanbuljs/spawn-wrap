@@ -1,12 +1,12 @@
 import Module from "module";
 import path from "path";
 import signalExit from "signal-exit";
-import { createWrapContextSync, destroyWrapContextSync } from "./context";
+import { createWrapContextSync, destroyWrapContextSync, SwContext, SwOptions } from "./context";
 import { IS_DEBUG } from "./debug";
 import { wrapInternalSpawn } from "./wrap";
 
-export function legacyWrap(args: string[], env?: Record<string, string>): any;
-export function legacyWrap(args: undefined, env: Record<string, string>): any;
+export function legacyWrap(args: string[], env?: Record<string, string>): () => void;
+export function legacyWrap(args: undefined, env: Record<string, string>): () => void;
 export function legacyWrap(args: any, env: any): any {
   if (typeof args === "object" && !Array.isArray(args) && env === undefined) {
     // We were passed a single `env` object
@@ -16,7 +16,7 @@ export function legacyWrap(args: any, env: any): any {
   return wrapGlobal({args, env});
 }
 
-export function wrapGlobal(options: any): any {
+export function wrapGlobal(options: SwOptions): () => void {
   const ctx = createWrapContextSync(options);
   signalExit(cleanUp);
   const unwrapApi = applyContextOnGlobal(ctx);
@@ -34,7 +34,7 @@ export function wrapGlobal(options: any): any {
   }
 }
 
-export function applyContextOnGlobal(ctx: any): any {
+export function applyContextOnGlobal(ctx: SwContext): () => void {
   const cp = require("child_process");
   const spawn = (cp as any).ChildProcess.prototype.spawn;
   const spawnSync = (process as any).binding("spawn_sync").spawn;
@@ -51,6 +51,13 @@ export function applyContextOnGlobal(ctx: any): any {
 }
 
 export function runMain(): void {
+  process.argv.splice(1, 1);
+  process.argv[1] = path.resolve(process.argv[1]);
+  delete require.cache[process.argv[1]];
+  Module.runMain();
+}
+
+export function spawnMain(): void {
   process.argv.splice(1, 1);
   process.argv[1] = path.resolve(process.argv[1]);
   delete require.cache[process.argv[1]];

@@ -4,6 +4,8 @@ import { SwContext } from "./context";
 
 const SHIM_TEMPLATE_PATH = path.join(__dirname, "..", "..", "build", "shim", "shim-template.js");
 const SHIM_TEMPLATE = fs.readFileSync(SHIM_TEMPLATE_PATH, "utf8");
+const PRELOAD_TEMPLATE_PATH = path.join(__dirname, "..", "..", "build", "shim", "preload-template.js");
+const PRELOAD_TEMPLATE = fs.readFileSync(PRELOAD_TEMPLATE_PATH, "utf8");
 
 function getShebang(execPath: string): string {
   // TODO: Remove the conditional? `os390` seems to be invalid
@@ -13,11 +15,16 @@ function getShebang(execPath: string): string {
 
 export function getShim(ctx: SwContext) {
   const shebangLine = getShebang(ctx.root.execPath);
-  const contextJson = JSON.stringify(ctx, null, 2);
+  const contextJson = JSON.stringify(ctx);
   const contextLines = `const context = ${contextJson};\n`;
   const shimBody = SHIM_TEMPLATE.replace("/* shim-template-include: context */\n", contextLines);
   return `${shebangLine}${shimBody}`;
+}
 
+export function getPreload(ctx: SwContext) {
+  const contextJson = JSON.stringify(ctx);
+  const contextLines = `const context = ${contextJson};\n`;
+  return PRELOAD_TEMPLATE.replace("/* shim-template-include: context */\n", contextLines);
 }
 
 export function getCmdShim(ctx: SwContext) {

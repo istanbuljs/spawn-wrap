@@ -9,6 +9,7 @@
 // a require('spawn-wrap').runMain() function that will strip
 // off the injected arguments and run the main file.
 
+import cp from "child_process";
 import fs from "fs";
 import util from "util";
 
@@ -54,7 +55,7 @@ function shimMain() {
     }
   }
 
-  const needExecArgs = context.execArgs || [];
+  const needExecArgs = [...context.execArgs];
 
   // If the user added their OWN wrapper pre-load script, then
   // this will pop that off of the argv, and load the "real" main
@@ -142,8 +143,7 @@ function shimMain() {
   // At this point, we've verified that we got the correct execArgv,
   // and that we have a main file, and that the main file is sitting at
   // argv[2].  Splice this shim off the list so it looks like the main.
-  const spliceArgs = [1, 1].concat(args);
-  process.argv.splice.apply(process.argv, spliceArgs);
+  process.argv.splice.apply(process.argv, [1, 1, ...args]);
 
   // Unwrap the PATH environment var so that we're not mucking
   // with the environment.  It'll get re-added if they spawn anything
@@ -177,11 +177,36 @@ function shimMain() {
       runMain();
     };
   }
-  spawnWrap.applyContextOnGlobal(context);
 
-  debug("shim runMain", process.argv);
-  delete require.cache[process.argv[1]];
-  Module.runMain();
+  switch (context.mode) {
+    case "run": {
+      spawnWrap.applyContextOnGlobal(context);
+      debug("shim runMain", process.argv);
+      delete require.cache[process.argv[1]];
+      Module.runMain();
+      break;
+    }
+    case "spawn": {
+      const wrapperPath: string = process.argv[1];
+      const wrapper: any = require(wrapperPath);
+      let wrapperMain: (spawnMain: () => cp.ChildProcess) => any;
+      if (typeof wrapper === "function") {
+        wrapperMain = wrapper;
+      } else if (typeof wrapper === "object" && wrapper !== null && typeof wrapper.default === "function") {
+        wrapperMain = wrapper.default;
+      } else {
+        throw new Error("Unable to find wrapper main");
+      }
+      wrapperMain(spawnMain);
+
+      function spawnMain(): cp.ChildProcess {
+        // TODO: execArgv, env
+        return cp.spawn(process.execPath, process.argv.slice(1));
+      }
+    }
+    default:
+      throw new Error("Unreachable");
+  }
 }
 
 shimMain();
