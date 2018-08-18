@@ -15,7 +15,7 @@ instead of some other thing when child procs call into it.
 
 [![Build Status](https://travis-ci.org/istanbuljs/spawn-wrap.svg)](https://travis-ci.org/istanbuljs/spawn-wrap)
 
-## USAGE
+## Usage
 
 ```javascript
 var wrap = require('spawn-wrap')
@@ -109,3 +109,59 @@ adhered to, despite best efforts:
 4. It *is* possible to escape the wrapping, if you spawn a bash
    script, and that script modifies the `PATH`, and then calls a
    specific `node` binary explicitly.
+
+## How it works
+
+When you create a new wrapper, the library starts by creating a context
+(SwContext). This is a snapshot of the arguments and environment variables
+you passed, but also path to the current Node process and library.
+
+During the creation of the context, a "shim directory" is written (by default,
+it is a unique directory inside `~/.node-spawn-wrap`). This directory contains
+executables ("shims") are intended to act as Node but inject the wrapping logic.
+
+These executables are auto-generated and the context is embedded in them:
+executing any of them will trigger the wrapping code.
+One shim is created with the name `node`, and eventually another one with the
+same name as the root process (for example `iojs` if the root process was
+named `iojs` instead of `node`). These shims are executable scripts with a
+shebang. For Windows, a `.cmd` file is created for each shim: for example
+`node.cmd` to open the `node` shim.
+
+Once the context is created and its shim directory written, `spawn-wrap`
+patches the API to use the shims.
+`spawn-wrap` can either patch the internals of `child_process` or create a
+wrapper around a `child_process`-like API. Patching the internals affects
+any code spawning processes, while the wrapper solution only intercepts calls
+going through the wrapper.
+The patch performs 4 steps: normalize the options, rewrite the options,
+denormalize the options, call the original function. The
+normalization/denormalization converts between API-specific arguments and
+a normalized representation of the spawn options. This normalized
+representation contains the spawned file, array of arguments and map of
+environment variables.
+
+The action of rewriting the spawn options is called "munging" in the lib.
+The goal is to replace any invocation of the real Node with one of the shims.
+The munging has a file-specific step and a general environment patching step.
+The munger will use the name (or try to read the shebang) of the spawned file
+to try to perform application-specific transformations. It currently detects
+when you spawn another Node process, `npm`, `cmd` or a known POSIX shell
+(`sh`, `bash`, ...).
+If you are spawning a shell, it will try to detect if you use the shell to
+spawn `node` or `npm`. For `node`, it will insert the shim script just after
+the Node executable: `node foo.js` will be replaced by
+`node path/to/shim/node foo.js`. For npm it will prefix it with the shim
+executable and ensure that he script path is used (Windows-based example
+so it's clear what's going on): `npm install` will become
+`path/to/shim/node.cmd path/to/npm-cli.js install`.
+
+If the spawned process is not Node or npm (or a shell invoking them),
+no application-specific logic is applied. But the general environment patching
+is still applied.
+This step is fairly simple: it just ensures that the shim directory is the
+first location in the `PATH` environment variable. It means that any subprocess
+inheriting this environment and trying to spawn Node using `node` instead of
+an absolute path will default to use the shim executable.
+
+TODO: Explain the magic inside the shim script
