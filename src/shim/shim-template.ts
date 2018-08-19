@@ -9,7 +9,6 @@
 // a require('spawn-wrap').runMain() function that will strip
 // off the injected arguments and run the main file.
 
-import cp from "child_process";
 import fs from "fs";
 import util from "util";
 
@@ -189,7 +188,7 @@ function shimMain() {
     case "spawn": {
       const wrapperPath: string = process.argv[1];
       const wrapper: any = require(wrapperPath);
-      let wrapperMain: (spawnMain: () => cp.ChildProcess) => any;
+      let wrapperMain: (ctx: any) => any;
       if (typeof wrapper === "function") {
         wrapperMain = wrapper;
       } else if (typeof wrapper === "object" && wrapper !== null && typeof wrapper.default === "function") {
@@ -197,12 +196,8 @@ function shimMain() {
       } else {
         throw new Error("Unable to find wrapper main");
       }
-      wrapperMain(spawnMain);
-
-      function spawnMain(): cp.ChildProcess {
-        // TODO: execArgv, env
-        return cp.spawn(process.execPath, process.argv.slice(1));
-      }
+      wrapperMain(context);
+      break;
     }
     default:
       throw new Error("Unreachable");

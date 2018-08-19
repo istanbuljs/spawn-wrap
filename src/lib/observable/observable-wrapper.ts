@@ -1,23 +1,25 @@
 import assert from "assert";
-import * as spawnWrap from "../index";
+import { SwContext } from "../context";
 import { SpawnClient } from "./client";
 import { ProxySpawnMessage, ServerMessage, VoidSpawnMessage } from "./protocol";
 
 // This file should not be executed directly: it must be spawn
 
-async function proxySpawn(client: SpawnClient, msg: ProxySpawnMessage) {
+async function proxySpawn(ctx: SwContext, client: SpawnClient, msg: ProxySpawnMessage) {
   client.close();
-  process.argv.splice(4, process.argv.length - 4, ...msg.args);
-  spawnWrap.runMain();
+  const node: string = process.execPath;
+  const foregroundChild = require(ctx.deps.foregroundChild);
+  foregroundChild(node, ["--require", ctx.preloadScript, ...msg.args]);
 }
 
-async function voidSpawn(client: SpawnClient, msg: VoidSpawnMessage) {
+async function voidSpawn(ctx: SwContext, client: SpawnClient, msg: VoidSpawnMessage) {
   client.close();
-  process.argv.splice(4, process.argv.length - 4, ...msg.args);
-  spawnWrap.runMain();
+  const node: string = process.execPath;
+  const foregroundChild = require(ctx.deps.foregroundChild);
+  foregroundChild(node, ["--require", ctx.preloadScript, ...msg.args]);
 }
 
-async function main() {
+async function main(ctx: SwContext) {
   assert(process.argv.length >= 4);
   const host: string = process.argv[2];
   const port: number = parseInt(process.argv[3], 10);
@@ -35,10 +37,10 @@ async function main() {
   client.subscribe((msg: ServerMessage) => {
     switch (msg.action) {
       case "proxy-spawn":
-        proxySpawn(client, msg);
+        proxySpawn(ctx, client, msg);
         break;
       case "void-spawn":
-        voidSpawn(client, msg);
+        voidSpawn(ctx, client, msg);
         break;
       default:
         throw new assert.AssertionError({message: "Unreachable"});
@@ -46,4 +48,4 @@ async function main() {
   });
 }
 
-main();
+export default main;

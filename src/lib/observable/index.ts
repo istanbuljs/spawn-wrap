@@ -95,7 +95,7 @@ export function spawn(
 
       const wrapperArgs: string[] = [OBSERVABLE_WRAPPER, server.host, server.port.toString(10)];
 
-      withSpawnWrap({args: wrapperArgs}, async (api) => {
+      withSpawnWrap({args: wrapperArgs, mode: "spawn"}, async (api) => {
         return new Promise((resolve, reject) => {
           rootProcess = api.spawn(file, args, options);
           server.subscribe(undefined, (err: Error) => reject(err), () => resolve());
