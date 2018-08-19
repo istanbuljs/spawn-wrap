@@ -42,6 +42,9 @@
     "url": "git+https://github.com/istanbuljs/spawn-wrap.git"
   },
   "author": "Isaac Z. Schlueter <i@izs.me> (http://blog.izs.me/)",
+  "contributors": [
+    "Charles Samborski <demurgos@demurgos.net> (https://demurgos.net)"
+  ],
   "license": "ISC",
   "bugs": {
     "url": "https://github.com/istanbuljs/spawn-wrap/issues"
