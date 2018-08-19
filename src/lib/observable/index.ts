@@ -256,8 +256,8 @@ export function spawn(
       withSpawnWrap(swOptions, async (api) => {
         return new Promise((resolve, reject) => {
           rootProcess = api.spawn(file, args, options);
-          rootProcess.stdout.pipe(process.stdout);
-          rootProcess.stderr.pipe(process.stderr);
+          // rootProcess.stdout.pipe(process.stdout);
+          // rootProcess.stderr.pipe(process.stderr);
           server.subscribe(undefined, (err: Error) => reject(err), () => resolve());
           rootProcess.on("close", async () => {
             await server.close();
