@@ -2,13 +2,11 @@ const fg = require('foreground-child')
 const sw = require('../')
 
 var argv = process.argv.slice(1).map(function (arg) {
-  if (arg === __filename) {
-    arg = 'double-wrap.js'
-  }
-  return arg
+  return arg === __filename ? 'double-wrap.js' : arg
 })
 
 const node = process.execPath
+const WRAPPER = require.resolve('./fixtures/double-wrap.wrapper.js')
 
 /*
 main adds sw([first]), spawns 'parent'
@@ -22,24 +20,14 @@ switch (process.argv[2]) {
   case 'main':
     console.error('main', process.pid, process.execArgv.concat(argv))
     console.log('main')
-    sw([__filename, 'first'])
+    sw.wrapGlobal({wrapper: WRAPPER, data: 'first'})
     fg(node, [__filename, 'parent'])
-    break
-  case 'first':
-    console.error('first', process.pid, process.execArgv.concat(argv))
-    console.log('first')
-    sw.runMain()
     break
   case 'parent':
     console.error('parent', process.pid, process.execArgv.concat(argv))
     console.log('parent')
-    sw([__filename, 'second'])
+    sw.wrapGlobal({wrapper: WRAPPER, data: 'second'})
     fg(node, [__filename, 'child'])
-    break
-  case 'second':
-    console.error('second', process.pid, process.execArgv.concat(argv))
-    console.log('second')
-    sw.runMain()
     break
   case 'child':
     console.error('child', process.pid, process.execArgv.concat(argv))
@@ -51,17 +39,16 @@ switch (process.argv[2]) {
 }
 
 function runTest () {
-  var t = require('tap')
-  var spawn = require('child_process').spawn
-  var child = spawn(node, [__filename, 'main'])
+  const t = require('tap')
+  const spawn = require('child_process').spawn
+  const child = spawn(node, [__filename, 'main'])
   // child.stderr.pipe(process.stderr)
-  var out = ''
-  child.stdout.on('data', function (c) {
-    out += c
-  })
+  const outChunks = []
+  child.stdout.on('data', (c) => outChunks.push(c))
   child.on('close', function (code, signal) {
-    t.notOk(code)
-    t.notOk(signal)
+    const out = Buffer.concat(outChunks).toString('UTF-8')
+    t.equal(code, 0)
+    t.equal(signal, null)
     t.equal(out, 'main\nfirst\nparent\nfirst\nsecond\nchild\n')
     t.end()
   })

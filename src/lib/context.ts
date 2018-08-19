@@ -10,6 +10,7 @@ import signalExit from "signal-exit";
 import { debug } from "./debug";
 import { getExeBasename } from "./exe-type";
 import { getCmdShim, getPreload, getShim } from "./shim";
+import { RootProcess, SwOptions } from "./types";
 
 const DEFAULT_SHIM_ROOT_NAME = ".node-spawn-wrap";
 const SHIM_ROOT_ENV_VAR = "SPAWN_WRAP_SHIM_ROOT";
@@ -17,7 +18,7 @@ const SHIM_ROOT_ENV_VAR = "SPAWN_WRAP_SHIM_ROOT";
 /**
  * Spawn wrap context.
  */
-export interface SwContext {
+export interface SwContext<D = any> {
   /**
    * Absolute system path for the `spawn-wrap` main module.
    */
@@ -26,7 +27,7 @@ export interface SwContext {
   /**
    * Absolute system path for the corresponding dependencies.
    */
-  readonly deps: Readonly<Record<"foregroundChild" | "isWindows" | "signalExit", string>>;
+  readonly deps: Readonly<Record<"debug" | "foregroundChild" | "isWindows" | "nodeCli" | "pathEnvVar" | "signalExit", string>>;
 
   /**
    * Unique key identifying this context.
@@ -63,65 +64,40 @@ export interface SwContext {
    */
   readonly shimExecutable: string;
 
+  /**
+   * Absolute path to a preload script inconditionally patching the internals.
+   *
+   * This script can be used as a `--require` hook to spawned subprocesses
+   * to automatically patch the internals using this context.
+   */
   readonly preloadScript: string;
 
-  readonly args: ReadonlyArray<string>;
+  /**
+   * Absolute path to the user-provided wrapper.
+   */
+  readonly wrapper: string;
 
-  readonly execArgs: ReadonlyArray<string>;
+  readonly data: D;
 
-  readonly env: Readonly<Record<string, string>>;
-
-  readonly mode: "run" | "spawn";
+  readonly sameProcess: boolean;
 
   /**
    * Information about the root process.
    *
    * The root process is the process that created the context.
    */
-  readonly root: {
-    readonly execPath: string;
-    readonly pid: number;
-  };
-}
-
-export interface SwOptions {
-  /**
-   * Node arguments for the wrapper.
-   */
-  args?: string[];
-
-  /**
-   * Additional environment variables.
-   */
-  env?: Record<string, string>;
-
-  /**
-   * Location where the shim directories will be created.
-   *
-   * Default:
-   * - If the env var `SPAWN_WRAP_SHIM_ROOT`, use its value
-   * - Otherwise, `.node-spawn-wrap` directory inside user's home dir.
-   */
-  shimRoot?: string;
-
-  /**
-   * How you intend to execute the main script when inside the wrapper.
-   * - `run`: `spawnWrap.runMain()`
-   * - `spawn`: `spawnWrap.spawnMain()`
-   */
-  mode?: "run" | "spawn";
+  readonly root: Readonly<RootProcess>;
 }
 
 /**
  * @internal
  */
 interface ResolvedOptions {
-  args: string[];
-  env: Record<string, string>;
-  execArgs: string[];
+  wrapper: string;
+  data: any;
   key: string;
   shimDir: string;
-  mode: "run" | "spawn";
+  sameProcess: boolean;
 }
 
 export function withWrapContext<R = any>(options: SwOptions, handler: (ctx: SwContext) => Promise<R>): Promise<R> {
@@ -236,54 +212,30 @@ export function destroyWrapContextSync(ctx: SwContext): void {
  */
 function resolveOptions(options: SwOptions): ResolvedOptions {
   assert(
-    !(options.args === undefined && options.env === undefined),
-    "at least one of \"args\" or \"env\" is required",
-  );
-  assert(
-    options.args === undefined || Array.isArray(options.args),
-    "args must be an array or undefined",
-  );
-  assert(
-    options.env === undefined || (typeof options.env === "object" && options.env !== null),
-    "env must be an object or undefined",
+    typeof options.wrapper === "string",
+    "wrapper must be a string",
   );
   assert(
     options.shimRoot === undefined || typeof options.shimRoot === "string",
     "shimRoot must be a string or undefined",
   );
 
-  const args = options.args !== undefined ? [...options.args] : [];
-  const env = options.env !== undefined ? Object.assign({}, options.env) : {};
-  const shimRoot = options.shimRoot !== undefined ? options.shimRoot : getShimRoot();
-  const mode: "run" | "spawn" = options.mode !== undefined ? options.mode : "run";
+  const wrapper = path.resolve(options.wrapper);
+  const data = options.data !== undefined ? JSON.parse(JSON.stringify(options.data)) : {};
+  const shimRoot = options.shimRoot !== undefined ? path.resolve(options.shimRoot) : getShimRoot();
+  const sameProcess: boolean = options.sameProcess !== undefined ? options.sameProcess : true;
 
-  debug("resolveOptions args=%j env=%j shimRoot=%j", args, env, shimRoot);
+  debug("resolveOptions wrapper=%j data=%j shimRoot=%j", wrapper, data, shimRoot);
 
   const key = `${process.pid}-${crypto.randomBytes(8).toString("hex")}`;
   const shimDir = path.join(shimRoot, key);
 
-  // For stuff like --use_strict or --harmony, we need to inject
-  // the argument *before* the wrap-main.
-  const execArgs = [];
-  for (let i = 0; i < args.length; i++) {
-    if (args[i].match(/^-/)) {
-      execArgs.push(args[i]);
-      if (args[i] === "-r" || args[i] === "--require") {
-        execArgs.push(args[++i]);
-      }
-    } else {
-      break;
-    }
-  }
-  args.splice(0, execArgs.length);
-
   return {
-    args,
-    execArgs,
-    env,
+    wrapper,
+    data,
     key,
     shimDir,
-    mode,
+    sameProcess,
   };
 }
 
@@ -291,8 +243,11 @@ function resolvedOptionsToContext(resolved: ResolvedOptions): SwContext {
   return Object.freeze({
     module: require.resolve("./index"),
     deps: Object.freeze({
+      debug: require.resolve("./debug"),
       foregroundChild: require.resolve("foreground-child"),
       isWindows: require.resolve("is-windows"),
+      nodeCli: require.resolve("./node-cli"),
+      pathEnvVar: require.resolve("./path-env-var"),
       signalExit: require.resolve("signal-exit"),
     }),
     key: resolved.key,
@@ -300,10 +255,9 @@ function resolvedOptionsToContext(resolved: ResolvedOptions): SwContext {
     shimScript: path.join(resolved.shimDir, "node"),
     shimExecutable: path.join(resolved.shimDir, isWindows() ? "node.cmd" : "node"),
     preloadScript: path.join(resolved.shimDir, "preload.js"),
-    args: Object.freeze(resolved.args),
-    execArgs: Object.freeze(resolved.execArgs),
-    env: Object.freeze(resolved.env),
-    mode: resolved.mode,
+    wrapper: resolved.wrapper,
+    data: resolved.data,
+    sameProcess: resolved.sameProcess,
     root: Object.freeze({
       execPath: process.execPath,
       pid: process.pid,

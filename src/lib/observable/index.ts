@@ -2,10 +2,11 @@ import assert from "assert";
 import cp, { ChildProcess } from "child_process";
 import { Observable, Observer, Subscribable, Unsubscribable } from "rxjs";
 import { withSpawnWrap } from "../local";
+import { SwOptions } from "../types";
 import { ClientMessage, InfoMessage } from "./protocol";
 import { RemoteSpawnClient, SpawnServer } from "./server";
 
-const OBSERVABLE_WRAPPER = require.resolve("./observable-wrapper.js");
+const OBSERVABLE_WRAPPER = require.resolve("./observable.wrapper.js");
 
 class SpawnEvent {
   public readonly args: ReadonlyArray<string>;
@@ -93,9 +94,16 @@ export function spawn(
         });
       });
 
-      const wrapperArgs: string[] = [OBSERVABLE_WRAPPER, server.host, server.port.toString(10)];
+      const swOptions: SwOptions = {
+        wrapper: OBSERVABLE_WRAPPER,
+        data: {
+          host: server.host,
+          port: server.port,
+        },
+        sameProcess: false,
+      };
 
-      withSpawnWrap({args: wrapperArgs, mode: "spawn"}, async (api) => {
+      withSpawnWrap(swOptions, async (api) => {
         return new Promise((resolve, reject) => {
           rootProcess = api.spawn(file, args, options);
           server.subscribe(undefined, (err: Error) => reject(err), () => resolve());

@@ -1,3 +1,4 @@
+import path from "path";
 import { SwContext } from "../context";
 import { IS_DEBUG } from "../debug";
 import { isPathEnvName, prependPathEnv } from "../path-env-var";
@@ -19,6 +20,7 @@ export function mungeEnv(ctx: SwContext, options: NormalizedOptions): Normalized
   if (IS_DEBUG) {
     newEnv.set("SPAWN_WRAP_DEBUG", "1");
   }
+  newEnv.set("SPAWN_WRAP_SHIM_ROOT", path.dirname(ctx.shimDir));
 
   return {...options, env: newEnv};
 }

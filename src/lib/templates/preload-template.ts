@@ -1,6 +1,8 @@
 // This module should *only* be loaded as a `--require` script.
 
-declare const context: any;
+import { SwContext } from "../context";
+
+declare const context: SwContext;
 /* global context */
 
 /* shim-template-include: context */

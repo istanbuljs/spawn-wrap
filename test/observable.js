@@ -4,7 +4,6 @@ const spawnWrap = require('../')
 const NESTED_SYNC = require.resolve('./fixtures/nested/nested-sync-0.js')
 
 const outChunks = []
-const errChunks = []
 
 const EXPECTED_OUT = '' +
   'Nested 0 (before)\n' +
@@ -25,17 +24,15 @@ tap.test('observeSpawn', (t) => {
         if (rootProcess !== undefined) {
           // console.log(`(Root process)`)
           rootProcess.stdout.on('data', (chunk) => outChunks.push(chunk))
-          rootProcess.stderr.on('data', (chunk) => errChunks.push(chunk))
+          // rootProcess.stderr.pipe(process.stderr)
         }
         // console.log(ev.args)
         ev.voidSpawn([...ev.args, 'extra'])
       },
       undefined,
       () => {
-        const outStr = Buffer.concat(outChunks).toString('UTF-8')
-        const errStr = Buffer.concat(errChunks).toString('UTF-8')
-        t.equal(outStr, EXPECTED_OUT)
-        t.equal(errStr, '')
+        const out = Buffer.concat(outChunks).toString('UTF-8')
+        t.equal(out, EXPECTED_OUT)
         t.end()
       }
     )

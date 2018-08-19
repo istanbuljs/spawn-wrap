@@ -1,7 +1,8 @@
 # spawn-wrap
 
-Wrap all spawned Node.js child processes by adding environs and
-arguments ahead of the main JavaScript file argument.
+Intercepts all spawned Node.js child processes and calls a user-supplied
+wrapper script enabling you to modify arguments or environment variables before
+executing the original script.
 
 Any child processes launched by that child process will also be
 wrapped in a similar fashion.
@@ -18,55 +19,162 @@ instead of some other thing when child procs call into it.
 ## Usage
 
 ```javascript
-var wrap = require('spawn-wrap')
+// main.js
+const spawnWrap = require('spawn-wrap')
 
-// wrap(wrapperArgs, environs)
-var unwrap = wrap(['/path/to/my/main.js', 'foo=bar'], { FOO: 1 })
+const wrapper = require.resolve('./wrapper.js')
+
+// spawnWrap.wrapGlobal(swOptions)
+const unwrap = spawnWrap.wrapGlobal({wrapper, data: {foo: 'bar'}})
 
 // later to undo the wrapping, you can call the returned function
 unwrap()
 ```
 
-In this example, the `/path/to/my/main.js` file will be used as the
-"main" module, whenever any Node or io.js child process is started,
-whether via a call to `spawn` or `exec`, whether node is invoked
-directly as the command or as the result of a shebang `#!` lookup.
-
-In `/path/to/my/main.js`, you can do whatever instrumentation or
-environment manipulation you like.  When you're done, and ready to run
-the "real" main.js file (ie, the one that was spawned in the first
-place), you can do this:
-
 ```javascript
-// /path/to/my/main.js
-// process.argv[1] === 'foo=bar'
-// and process.env.FOO === '1'
-
-// my wrapping manipulations
-setupInstrumentationOrCoverageOrWhatever()
-process.on('exit', function (code) {
-  storeCoverageInfoSynchronously()
-})
-
-// now run the instrumented and covered or whatever codes
-require('spawn-wrap').runMain()
+// wrapper.js
+module.exports = function(wrapper) {
+  const data = wrapper.context.data;
+  process.env.FOO = data.foo;
+  wrapper.runMain();
+}
 ```
 
-## ENVIRONMENT VARIABLES
+In this example, the `wrapper.js` will be used as the "wrapper" module,
+whenever any Node child process is started, whether via a call to `spawn` or
+`exec`, whether node is invoked directly as the command or as the result of a
+shebang `#!` lookup.
 
-Spawn-wrap responds to two environment variables, both of which are
-preserved through child processes.
+In `wrapper.js`, you can do whatever instrumentation or environment
+manipulation you like.  When you're done, and ready to run the "real" main
+module (ie, the one that was spawned in the first place), you can do this:
 
-`SPAWN_WRAP_DEBUG=1` in the environment will make this module dump a
-lot of information to stderr.
+```javascript
+// wrapper.js
 
-`SPAWN_WRAP_SHIM_ROOT` can be set to a path on the filesystem where
-the shim files are written in a `.node-spawn-wrap-<id>` folder.  By
-default this is done in `$HOME`, but in some environments you may wish
-to point it at some other root.  (For example, if `$HOME` is mounted
-as read-only in a virtual machine or container.)
+module.exports = function(wrapper) {
+  // my wrapping manipulations
+  setupInstrumentationOrCoverageOrWhatever()
+  process.on('exit', function (code) {
+    storeCoverageInfoSynchronously()
+  })
 
-## CONTRACTS and CAVEATS
+  // now run the instrumented and covered or whatever codes
+  wrapper.runMain()
+}
+```
+
+## Documentation
+
+### Functions
+
+#### `wrapGlobal(swOptions: SwOptions): UnwrapFn`
+
+Creates a new context synchronously and patches the `child_process` internals.
+Any spawned process from now on will be wrapped.
+
+Returns an "unwrap" function (`() => void`) that restores the state of the
+internals before the function was called and cleans the spawn context.
+
+### Interfaces
+
+### `SwOptions`
+
+- `wrapper`: Path to the wrapper module. Normalized with `path.resolve`.
+  - Type: `string`
+  - Required
+- `data`: Any JSON-serializable data that you want to pass to the wrapper
+  module. It will be available as `context.data` in the wrapper API.
+  - Type: JSON-serializable value
+  - Optional, default: `{}`
+- `shimRoot`: Path to the directory where shim directories will be created. See
+  "How it works" section. Normalized with `path.resolve`.
+  - Type: `string`
+  - Optional, default: `SPAWN_WRAP_SHIM_ROOT` env variable if defined, otherwise
+    `$HOME/.node-spawn-wrap`.
+- `sameProcess` controls if the "wrapper" and wrapped "main" will use the same
+  process. This changes the way the wrapper is executed: read the
+  "wrapper modes" section.
+  - Type: `boolean`
+  - Optional, default: `true`
+
+### `SwContext`
+
+Represents a `spawn-wrap` context. See "How it works" for the details.
+
+- `data`: User-supplied data (from `options.data`)
+- `wrapper`: Absolute path to the wrapper module (from `options.wrapper`).
+- `sameProcess`: Boolean indicating if `sameProcess` mode is used
+  (from `options.sameProcess`).
+- `preloadScript`: Absolute path to a preload script bound to this context,
+  importing it will inconditionally patch the internals of `child_process`
+  by applying withs context. You can use it as a require hook if you are in
+  an unwrapped process and want to wrap a child process
+  (`spawn('node', ['--require', preloadScript, 'foo.js'])`.
+- Other data about the context, see source code (TODO: document it here).
+
+### `WrapperApi`
+
+- `args`: Arguments for the original main module.
+  - In `sameProcess=true` mode, it only contains regular (non-exec) arguments.
+    For example, spawning `node --require @babel/register foo.js bar` will
+    result in `['foo.js', 'bar']`. It corresponds to `process.argv.slice(2)`.
+  - In `sameProcess=false` mode, it contains all the arguments passed to the
+    original Node process. For example, spawning
+    `node --require @babel/register foo.js bar` will result in
+    `['--require', '@babel/register', 'foo.js', 'bar']`.
+  - Type: `ReadonlyArray<string>`
+- `context`: The `SwContext` object corresponding to this wrapper.
+- `runMain`: **ONLY AVAILABLE IN `sameProcess=true` MODE**. Requires the
+  original main module and executes as if it was the main module.
+  
+  - It performs the following steps:
+    1. Removes the wrapper path from `process.argv`
+       (`process.argv.splice(1, 1)`).
+    2. Ensures that the main module is not in the `require` cache. (in case it
+       was required by the wrapper)
+    3. Calls `Module.runMain` to execute the original main module.
+  - Type: `() => void`
+
+### Wrapper module
+
+The wrapper module will be called as the main module whenever a Node process is
+spawned. For example spawning `node foo.js` will lead to the execution of the
+wrapper as if it was `node wrapper.js foo.js`. The wrapper is always injected
+before the regular arguments to Node.
+
+The wrapper should export a wrapper function, either as `module.exports` or its
+`default` named export. This function will be called with a `WrapperApi` object
+providing context to the wrapper.
+
+### Wrapper modes
+
+The wrappers can be invoked in one of two modes: `sameProcess=true` (default)
+or `sameProcess=false`.
+
+Here are the differences:
+
+| `sameProcess=true`                    | `sameProcess=false`                  |
+|---------------------------------------|--------------------------------------|
+| `wrapper.runMain` available           | `wrapper.runMain` unavailable        |
+| `wrapper.args` without exec args      | `wrapper.args` with exec args        |
+| Internals patched before wrapper call | No automatic internals patching      |
+| Wraps only if main module is found    | Always wrap, even `node -e`          |
+
+## Environment variables
+
+`spawn-wrap` responds to two environment variables, both of which are preserved
+through child processes.
+
+`SPAWN_WRAP_DEBUG=1` in the environment will make this module dump a lot of
+information to stderr.
+
+`SPAWN_WRAP_SHIM_ROOT` can be set to a path on the filesystem where the shim
+files are written. By default this is done in `$HOME/.node-spawn-wrap`, but in
+some environments you may wish to point it at some other root. (For example,
+if `$HOME` is mounted as read-only in a virtual machine or container.)
+
+## Contracts and caveats
 
 The initial wrap call uses synchronous I/O.  Probably you should not
 be using this script in any production environments anyway.
@@ -76,17 +184,17 @@ we're adding a few layers of indirection.
 
 The contract which this library aims to uphold is:
 
-* Wrapped processes behave identical to their unwrapped counterparts
+- Wrapped processes behave identical to their unwrapped counterparts
   for all intents and purposes.  That means that the wrapper script
   propagates all signals and exit codes.
-* If you send a signal to the wrapper, the child gets the signal.
-* If the child exits with a numeric status code, then the wrapper
+- If you send a signal to the wrapper, the child gets the signal.
+- If the child exits with a numeric status code, then the wrapper
   exits with that code.
-* If the child dies with a signal, then the wrapper dies with the
+- If the child dies with a signal, then the wrapper dies with the
   same signal.
-* If you execute any Node child process, in any of the various ways
+- If you execute any Node child process, in any of the various ways
   that such a thing can be done, it will be wrapped.
-* Children of wrapped processes are also wrapped.
+- Children of wrapped processes are also wrapped.
 
 (Much of this made possible by
 [foreground-child](http://npm.im/foreground-child).)
@@ -165,3 +273,76 @@ inheriting this environment and trying to spawn Node using `node` instead of
 an absolute path will default to use the shim executable.
 
 TODO: Explain the magic inside the shim script
+
+## Migrating from version `1.x` to `2.x`
+
+The minimum supported version is Node 6. It may work with older versions but
+no guarantees are provided. If you are still using older Node versions, you
+should first migrate to a newer version.
+
+`spawn-wrap@1` exposed a single function as its `module.exports` value.
+`spawn-wrap@2` exposes multiple functions using named exports.
+
+The equivalent of function from version `1.x` is `wrapGlobal`. It patches
+the internals of `child_process` and returns an `unwrap` function.
+However, the signature is not the same.
+
+In the first version, you could pass an array of arguments and an object
+representing extra environment variables.
+
+In version `2.x`, you can pass a `wrapper` path and `data` object.
+
+- The `env` argument from version `1.x` can replaced by manually patching
+  `process.env` from inside the `wrapper`. If you have some
+  dynamically-computed values, you can pass them through the `data` option.
+
+  - Version 1
+    ```javascript
+    // main.js
+    const spawnWrap = require('spawn-wrap');
+    spawnWrap(['wrapper.js'], {FOO: 'foo', BAR: process.pid})
+    ```
+    ```javascript
+    // wrapper.js
+    const spawnWrap = require('spawn-wrap');
+    spawnWrap.runMain()
+    ```
+
+  - Version 2
+    ```javascript
+    // main.js
+    const spawnWrap = require('spawn-wrap');
+    spawnWrap.wrapGlobal({wrapper: 'wrapper.js', data: process.pid})
+    ```
+    ```javascript
+    // wrapper.js
+    module.exports = function(wrapper) {
+      process.env.FOO = 'foo1'
+      process.env.BAR = wrapper.context.data.toString(10)
+      wrapper.runMain();
+    }
+    ```
+
+- The `args` argument from version `1.x` was either used to pass data to the
+  wrapper (then use `data` in version 2) or force some Node arguments
+  (`process.execArgv`). If you want to force node arguments, you need to spawn
+  the main module in a subprocess using `sameProcess=false` mode.
+  
+  ```javascript
+  // main.js
+  const spawnWrap = require('spawn-wrap');
+  spawnWrap.wrapGlobal({wrapper: 'wrapper.js', sameProcess: false})
+  ```
+  ```javascript
+  // wrapper.js
+  module.exports = function(wrapper) {
+    const extraArgs = [
+      '--require', '@babel/register',
+          // If you want to ensure the sub-childs are wrapped too.
+      // (opt-in in `sameProcess=false` mode)
+      '--require', wrapper.context.preloadScript,
+    ]
+    const foregroundChild = wrapper.context.deps.foregroundChild;
+    foregroundChild(process.execPath, [...extraArgs, ...wrapper.args])
+  }
+  ```

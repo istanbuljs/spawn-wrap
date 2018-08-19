@@ -1,5 +1,6 @@
 import cp from "child_process";
-import { SwContext, SwOptions, withWrapContext, withWrapContextSync } from "./context";
+import { SwContext, withWrapContext, withWrapContextSync } from "./context";
+import { SwOptions } from "./types";
 import { wrapSpawn } from "./wrap";
 
 export type SyncApi = Pick<typeof cp, "spawnSync">;

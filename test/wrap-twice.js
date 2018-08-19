@@ -2,23 +2,14 @@ const fg = require('foreground-child')
 const sw = require('../')
 
 const node = process.execPath
+const WRAPPER = require.resolve('./fixtures/wrap-twice.wrapper.js')
 
 // apply 2 spawn-wraps, make sure they don't clobber one another
 switch (process.argv[2]) {
-  case 'outer':
-    console.log('outer')
-    sw.runMain()
-    break
-
-  case 'inner':
-    console.log('inner')
-    sw.runMain()
-    break
-
   case 'main':
     console.log('main')
-    sw([__filename, 'outer'])
-    sw([__filename, 'inner'])
+    sw.wrapGlobal({wrapper: WRAPPER, data: 'outer'})
+    sw.wrapGlobal({wrapper: WRAPPER, data: 'inner'})
     fg(node, [__filename, 'parent'])
     break
 
@@ -37,17 +28,16 @@ switch (process.argv[2]) {
 }
 
 function runTest () {
-  var t = require('tap')
-  var spawn = require('child_process').spawn
-  var child = spawn(node, [__filename, 'main'])
+  const t = require('tap')
+  const spawn = require('child_process').spawn
+  const child = spawn(node, [__filename, 'main'])
   // child.stderr.pipe(process.stderr)
-  var out = ''
-  child.stdout.on('data', function (c) {
-    out += c
-  })
+  const outChunks = []
+  child.stdout.on('data', (c) => outChunks.push(c))
   child.on('close', function (code, signal) {
-    t.notOk(code)
-    t.notOk(signal)
+    const out = Buffer.concat(outChunks).toString('UTF-8')
+    t.equal(code, 0)
+    t.equal(signal, null)
     t.equal(out, 'main\nouter\ninner\nparent\nouter\ninner\nchild\n')
     t.end()
   })

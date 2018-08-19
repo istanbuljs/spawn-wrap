@@ -1,5 +1,6 @@
 import assert from "assert";
 import { SwContext } from "../context";
+import { WrapperApi } from "../types";
 import { SpawnClient } from "./client";
 import { ProxySpawnMessage, ServerMessage, VoidSpawnMessage } from "./protocol";
 
@@ -19,28 +20,27 @@ async function voidSpawn(ctx: SwContext, client: SpawnClient, msg: VoidSpawnMess
   foregroundChild(node, ["--require", ctx.preloadScript, ...msg.args]);
 }
 
-async function main(ctx: SwContext) {
-  assert(process.argv.length >= 4);
-  const host: string = process.argv[2];
-  const port: number = parseInt(process.argv[3], 10);
+async function main(wrapper: WrapperApi) {
+  assert(process.argv.length >= 2);
+  const host: string = wrapper.context.data.host;
+  const port: number = wrapper.context.data.port;
 
   const client = await SpawnClient.create(host, port);
 
-  const wrappedArgs: string[] = process.argv.slice(4);
   client.next({
     action: "info",
     pid: process.pid,
-    args: wrappedArgs,
+    args: wrapper.args,
     env: {},
   });
 
   client.subscribe((msg: ServerMessage) => {
     switch (msg.action) {
       case "proxy-spawn":
-        proxySpawn(ctx, client, msg);
+        proxySpawn(wrapper.context, client, msg);
         break;
       case "void-spawn":
-        voidSpawn(ctx, client, msg);
+        voidSpawn(wrapper.context, client, msg);
         break;
       default:
         throw new assert.AssertionError({message: "Unreachable"});
