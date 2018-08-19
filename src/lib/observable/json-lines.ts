@@ -1,6 +1,5 @@
-import { empty, Observable, OperatorFunction, pipe } from "rxjs";
+import { empty, from, Observable, OperatorFunction, pipe } from "rxjs";
 import { map, mergeMap } from "rxjs/operators";
-import { fromArray } from "../../../node_modules/rxjs/internal/observable/fromArray";
 
 export function parseJsonLines(): OperatorFunction<Buffer, any> {
   return pipe(parseLines(), map((line) => JSON.parse(line)));
@@ -39,6 +38,6 @@ function parseLines(): OperatorFunction<Buffer, string> {
       lastIndex = nextIndex;
     }
     chunks.splice(0, chunks.length, all.slice(lastIndex));
-    return fromArray(lines);
+    return from(lines);
   });
 }
