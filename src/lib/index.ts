@@ -1,11 +1,5 @@
-import { withSpawnWrap, withSpawnWrapSync } from "./local";
-import { spawn as observeSpawn } from "./observable/index";
-import { applyContextOnGlobal, wrapGlobal } from "./spawn-wrap";
-
-export {
-  applyContextOnGlobal,
-  observeSpawn,
-  wrapGlobal,
-  withSpawnWrap,
-  withSpawnWrapSync,
-};
+export { SwContext } from "./context";
+export { withSpawnWrap, withSpawnWrapSync } from "./local";
+export { spawn as observeSpawn } from "./observable/index";
+export { applyContextOnGlobal, wrapGlobal } from "./spawn-wrap";
+export { SwOptions, WrapperApi } from "./types";
