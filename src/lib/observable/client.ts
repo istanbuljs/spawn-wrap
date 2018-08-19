@@ -41,9 +41,30 @@ export class SpawnClient implements Observer<ClientMessage>, Subscribable<Server
     this.socket = socket;
   }
 
-  public close() {
+  public async close(): Promise<void> {
     this.socket.end();
     this.output.complete();
+    const socket: net.Socket = this.socket;
+
+    return new Promise<void>((resolve, reject) => {
+      socket.once("close", onClose);
+      socket.once("error", onError);
+
+      function onClose(hadError: boolean): void {
+        removeListeners();
+        resolve();
+      }
+
+      function onError(error: Error): void {
+        removeListeners();
+        reject(error);
+      }
+
+      function removeListeners() {
+        socket.removeListener("close", onClose);
+        socket.removeListener("error", onError);
+      }
+    });
   }
 
   public get closed() {

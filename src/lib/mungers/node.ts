@@ -44,7 +44,7 @@ export function mungeNode(ctx: SwContext, options: NormalizedOptions): Normalize
   let newFile: string = options.file;
 
   if (mainIndex !== undefined) {
-    newArgs.splice(mainIndex, 0, ctx.shimExecutable);
+    newArgs.splice(mainIndex, 0, ctx.shimScript);
   }
 
   // If the file is just something like 'node' then that'll

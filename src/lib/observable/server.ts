@@ -32,8 +32,8 @@ export class SpawnServer implements Subscribable<RemoteSpawnClient> {
     );
   }
 
-  public close() {
-    this.tcpServer.close();
+  public async close(): Promise<void> {
+    return this.tcpServer.close();
   }
 
   public subscribe(...args: any[]): any {
@@ -85,9 +85,30 @@ export class TcpServer {
     this.server = server;
   }
 
-  public close() {
+  public async close(): Promise<void> {
     this.server.close();
     (this.connections as Subject<net.Socket>).complete();
+    const server: net.Server = this.server;
+
+    return new Promise<void>((resolve, reject) => {
+      server.once("close", onClose);
+      server.once("error", onError);
+
+      function onClose(hadError: boolean): void {
+        removeListeners();
+        resolve();
+      }
+
+      function onError(error: Error): void {
+        removeListeners();
+        reject(error);
+      }
+
+      function removeListeners() {
+        server.removeListener("close", onClose);
+        server.removeListener("error", onError);
+      }
+    });
   }
 }
 

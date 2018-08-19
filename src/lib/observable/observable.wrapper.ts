@@ -34,7 +34,7 @@ async function proxySpawn(ctx: SwContext, client: SpawnClient, msg: ProxySpawnMe
     node,
     ["--require", ctx.preloadScript, ...msg.args],
     async () => {
-      client.close();
+      return client.close();
     },
   );
   cpProxy(client, msg.spawnId, proc);
