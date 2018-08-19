@@ -10,7 +10,7 @@ import { RemoteSpawnClient, SpawnServer } from "./server";
 
 const OBSERVABLE_WRAPPER = require.resolve("./observable.wrapper.js");
 
-class SpawnEvent {
+export class SpawnEvent {
   public readonly args: ReadonlyArray<string>;
   public readonly rootProcess: ChildProcess | undefined;
   private readonly client: RemoteSpawnClient;

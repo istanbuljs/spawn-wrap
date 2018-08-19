@@ -3,6 +3,7 @@
   "version": "1.4.2",
   "description": "Wrap all spawned Node.js child processes by adding environs and arguments ahead of the main JavaScript file argument.",
   "main": "build/lib/index.js",
+  "types": "build/lib/index.d.ts",
   "engines": {
     "node": ">=8.0.0"
   },
