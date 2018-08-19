@@ -23,9 +23,8 @@
     "which": "^1.3.0"
   },
   "scripts": {
-    "build": "npm run build:shim && npm run build:lib",
+    "build": "npm run build:lib",
     "build:lib": "tsc -p src/lib",
-    "build:shim": "tsc -p src/shim",
     "clean": "rm -rf ~/.node-spawn-wrap",
     "posttest": "standard && npm run tslint",
     "postpublish": "git push origin --all; git push origin --tags",

@@ -2,9 +2,9 @@ import fs from "fs";
 import path from "path";
 import { SwContext } from "./context";
 
-const SHIM_TEMPLATE_PATH = path.join(__dirname, "..", "..", "build", "shim", "shim-template.js");
+const SHIM_TEMPLATE_PATH = path.join(__dirname, "templates", "shim-template.js");
 const SHIM_TEMPLATE = fs.readFileSync(SHIM_TEMPLATE_PATH, "utf8");
-const PRELOAD_TEMPLATE_PATH = path.join(__dirname, "..", "..", "build", "shim", "preload-template.js");
+const PRELOAD_TEMPLATE_PATH = path.join(__dirname, "templates", "preload-template.js");
 const PRELOAD_TEMPLATE = fs.readFileSync(PRELOAD_TEMPLATE_PATH, "utf8");
 
 function getShebang(execPath: string): string {

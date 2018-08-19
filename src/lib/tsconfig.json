@@ -6,10 +6,5 @@
   },
   "include": [
     "**/*.ts"
-  ],
-  "references": [
-    {
-      "path": "../shim"
-    }
   ]
 }
