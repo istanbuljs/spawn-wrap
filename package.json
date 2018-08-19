@@ -60,7 +60,7 @@
     "src",
     "CONTRIBUTING.md",
     "README.md",
-    "LICENSE",
+    "LICENSE.md"
   ],
   "standard": {
     "ignore": [
