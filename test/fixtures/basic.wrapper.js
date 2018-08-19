@@ -2,7 +2,7 @@ const onExit = require('signal-exit')
 
 const fixture = require.resolve('./script.js')
 
-module.exports = function (wrapperApi) {
+module.exports = function (wrapper) {
   // hang up once
   process.once('SIGHUP', function onHup () {
     console.log('SIGHUP')
@@ -21,5 +21,5 @@ module.exports = function (wrapperApi) {
     return arg
   })
   console.log('WRAP %j', process.execArgv.concat(argv))
-  wrapperApi.runMain()
+  wrapper.runMain()
 }

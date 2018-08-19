@@ -12,7 +12,7 @@ const spawn = cp.spawn
 const nodes = ['node', process.execPath]
 const WRAPPER = require.resolve('./fixtures/exec-flag.wrapper.js')
 
-sw.wrapGlobal({wrapper: WRAPPER})
+sw.patchInternals({wrapper: WRAPPER})
 
 t.test('try to wrap a -e invocation but it isnt wrapped', function (t) {
   nodes.forEach(function (node) {

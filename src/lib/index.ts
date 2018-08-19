@@ -1,5 +1,5 @@
 export { SwContext } from "./context";
 export { withSpawnWrap, withSpawnWrapSync } from "./local";
 export { spawn as observeSpawn } from "./observable/index";
-export { applyContextOnGlobal, wrapGlobal } from "./spawn-wrap";
+export { patchInternalsWithContext, patchInternals } from "./internals";
 export { SwOptions, WrapperApi } from "./types";

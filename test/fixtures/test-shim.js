@@ -1,5 +1,5 @@
-module.exports = function (wrapperApi) {
+module.exports = function (wrapper) {
   console.log('before in shim')
-  wrapperApi.runMain()
+  wrapper.runMain()
   console.log('after in shim')
 }

@@ -79,7 +79,7 @@ function shimMain() {
   process.argv.splice(1, 1, context.wrapper);
 
   if (context.sameProcess) {
-    spawnWrap.applyContextOnGlobal(context);
+    spawnWrap.patchInternalsWithContext(context);
 
     function runMain(): void {
       // Remove the wrapper, so the real main looks like the main

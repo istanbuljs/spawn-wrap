@@ -24,8 +24,8 @@ const spawnWrap = require('spawn-wrap')
 
 const wrapper = require.resolve('./wrapper.js')
 
-// spawnWrap.wrapGlobal(swOptions)
-const unwrap = spawnWrap.wrapGlobal({wrapper, data: {foo: 'bar'}})
+// spawnWrap.patchInternals(swOptions)
+const unwrap = spawnWrap.patchInternals({wrapper, data: {foo: 'bar'}})
 
 // later to undo the wrapping, you can call the returned function
 unwrap()
@@ -68,7 +68,7 @@ module.exports = function(wrapper) {
 
 ### Functions
 
-#### `wrapGlobal(swOptions: SwOptions): UnwrapFn`
+#### `patchInternals(swOptions: SwOptions): UnwrapFn`
 
 Creates a new context synchronously and patches the `child_process` internals.
 Any spawned process from now on will be wrapped.
@@ -283,7 +283,7 @@ should first migrate to a newer version.
 `spawn-wrap@1` exposed a single function as its `module.exports` value.
 `spawn-wrap@2` exposes multiple functions using named exports.
 
-The equivalent of function from version `1.x` is `wrapGlobal`. It patches
+The equivalent of function from version `1.x` is `patchInternals`. It patches
 the internals of `child_process` and returns an `unwrap` function.
 However, the signature is not the same.
 
@@ -312,7 +312,7 @@ In version `2.x`, you can pass a `wrapper` path and `data` object.
     ```javascript
     // main.js
     const spawnWrap = require('spawn-wrap');
-    spawnWrap.wrapGlobal({wrapper: 'wrapper.js', data: process.pid})
+    spawnWrap.patchInternals({wrapper: 'wrapper.js', data: process.pid})
     ```
     ```javascript
     // wrapper.js
@@ -331,7 +331,7 @@ In version `2.x`, you can pass a `wrapper` path and `data` object.
   ```javascript
   // main.js
   const spawnWrap = require('spawn-wrap');
-  spawnWrap.wrapGlobal({wrapper: 'wrapper.js', sameProcess: false})
+  spawnWrap.patchInternals({wrapper: 'wrapper.js', sameProcess: false})
   ```
   ```javascript
   // wrapper.js

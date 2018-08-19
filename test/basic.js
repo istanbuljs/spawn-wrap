@@ -12,7 +12,7 @@ const npmFixture = require.resolve('./fixtures/npm')
 
 const WRAPPER = require.resolve('./fixtures/basic.wrapper.js')
 
-var unwrap = sw.wrapGlobal({wrapper: WRAPPER})
+var unwrap = sw.patchInternals({wrapper: WRAPPER})
 
 var expect = 'WRAP ["{{FIXTURE}}","xyz"]\n' +
   '[]\n' +

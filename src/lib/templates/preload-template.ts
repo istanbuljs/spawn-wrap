@@ -9,7 +9,7 @@ declare const context: SwContext;
 
 function register() {
   const spawnWrap: any = require(context.module);
-  spawnWrap.applyContextOnGlobal(context);
+  spawnWrap.patchInternalsWithContext(context);
 }
 
 register();
