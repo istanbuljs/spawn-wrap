@@ -47,7 +47,7 @@ export class TcpServer {
       const server: net.Server = net.createServer();
       server.on("error", onError);
       server.on("listening", onListening);
-      server.listen();
+      server.listen(0, "127.0.0.1");
 
       function onError(err: Error) {
         removeListeners();
