@@ -1,7 +1,7 @@
 export interface ProxySpawnMessage {
   action: "proxy-spawn";
   args: ReadonlyArray<string>;
-  spawnId: number;
+  spawnId: string;
 }
 
 export interface VoidSpawnMessage {
@@ -18,4 +18,29 @@ export interface InfoMessage {
   env: Record<string, string>;
 }
 
-export type ClientMessage = InfoMessage;
+export interface ErrorStreamEvent {
+  spawnId: string;
+  action: "stream-event";
+  stream: "stdout" | "stderr";
+  event: "error";
+  error: any;
+}
+
+export interface DataStreamEvent {
+  spawnId: string;
+  action: "stream-event";
+  stream: "stdout" | "stderr";
+  event: "data";
+  // buffer.toString("hex")
+  chunk: string;
+}
+
+export interface OtherStreamEvent {
+  spawnId: string;
+  action: "stream-event";
+  stream: "stdout" | "stderr";
+  event: "close" | "end" | "readable";
+}
+
+export type StreamEvent = DataStreamEvent | ErrorStreamEvent | OtherStreamEvent;
+export type ClientMessage = InfoMessage | StreamEvent;

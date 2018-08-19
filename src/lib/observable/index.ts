@@ -1,9 +1,11 @@
 import assert from "assert";
 import cp, { ChildProcess } from "child_process";
+import events from "events";
 import { Observable, Observer, Subscribable, Unsubscribable } from "rxjs";
+import { filter } from "rxjs/operators";
 import { withSpawnWrap } from "../local";
 import { SwOptions } from "../types";
-import { ClientMessage, InfoMessage } from "./protocol";
+import { ClientMessage, InfoMessage, StreamEvent } from "./protocol";
 import { RemoteSpawnClient, SpawnServer } from "./server";
 
 const OBSERVABLE_WRAPPER = require.resolve("./observable.wrapper.js");
@@ -29,14 +31,14 @@ class SpawnEvent {
       args = this.args;
     }
 
-    const spawnId: number = this.spawnCount;
+    const spawnId: string = this.spawnCount.toString(10);
     this.client.next({
       action: "proxy-spawn",
       spawnId,
       args,
     });
     this.spawnCount++;
-    return new ChildProcessProxy(this.client, spawnId);
+    return new SimpleChildProcessProxy(this.client, spawnId);
   }
 
   public voidSpawn(args?: ReadonlyArray<string>): void {
@@ -55,15 +57,128 @@ class SpawnEvent {
   }
 }
 
-export class ChildProcessProxy {
-  private readonly file: string;
-  private readonly client: RemoteSpawnClient;
-  private readonly spawnId: number;
+export interface ReadableStreamProxy {
+  // tslint:disable:unified-signatures
 
-  constructor(client: RemoteSpawnClient, spawnId: number) {
-    this.file = "TODO";
+  /**
+   * Event emitter
+   * The defined events on documents including:
+   * 1. close
+   * 2. data
+   * 3. end
+   * 4. readable
+   * 5. error
+   */
+  addListener(event: "close", listener: () => void): this;
+  addListener(event: "data", listener: (chunk: any) => void): this;
+  addListener(event: "end", listener: () => void): this;
+  addListener(event: "readable", listener: () => void): this;
+  addListener(event: "error", listener: (err: Error) => void): this;
+  addListener(event: string | symbol, listener: (...args: any[]) => void): this;
+
+  emit(event: "close"): boolean;
+  emit(event: "data", chunk: any): boolean;
+  emit(event: "end"): boolean;
+  emit(event: "readable"): boolean;
+  emit(event: "error", err: Error): boolean;
+  emit(event: string | symbol, ...args: any[]): boolean;
+
+  on(event: "close", listener: () => void): this;
+  on(event: "data", listener: (chunk: any) => void): this;
+  on(event: "end", listener: () => void): this;
+  on(event: "readable", listener: () => void): this;
+  on(event: "error", listener: (err: Error) => void): this;
+  on(event: string | symbol, listener: (...args: any[]) => void): this;
+
+  once(event: "close", listener: () => void): this;
+  once(event: "data", listener: (chunk: any) => void): this;
+  once(event: "end", listener: () => void): this;
+  once(event: "readable", listener: () => void): this;
+  once(event: "error", listener: (err: Error) => void): this;
+  once(event: string | symbol, listener: (...args: any[]) => void): this;
+
+  prependListener(event: "close", listener: () => void): this;
+  prependListener(event: "data", listener: (chunk: any) => void): this;
+  prependListener(event: "end", listener: () => void): this;
+  prependListener(event: "readable", listener: () => void): this;
+  prependListener(event: "error", listener: (err: Error) => void): this;
+  prependListener(event: string | symbol, listener: (...args: any[]) => void): this;
+
+  prependOnceListener(event: "close", listener: () => void): this;
+  prependOnceListener(event: "data", listener: (chunk: any) => void): this;
+  prependOnceListener(event: "end", listener: () => void): this;
+  prependOnceListener(event: "readable", listener: () => void): this;
+  prependOnceListener(event: "error", listener: (err: Error) => void): this;
+  prependOnceListener(event: string | symbol, listener: (...args: any[]) => void): this;
+
+  removeListener(event: "close", listener: () => void): this;
+  removeListener(event: "data", listener: (chunk: any) => void): this;
+  removeListener(event: "end", listener: () => void): this;
+  removeListener(event: "readable", listener: () => void): this;
+  removeListener(event: "error", listener: (err: Error) => void): this;
+  removeListener(event: string | symbol, listener: (...args: any[]) => void): this;
+}
+
+export interface ChildProcessProxy {
+  readonly stdout: ReadableStreamProxy;
+  readonly stderr: ReadableStreamProxy;
+}
+
+class SimpleChildProcessProxy implements ChildProcessProxy {
+  public readonly stdout: events.EventEmitter;
+  public readonly stderr: events.EventEmitter;
+
+  private readonly client: RemoteSpawnClient;
+  private readonly spawnId: string;
+
+  constructor(client: RemoteSpawnClient, spawnId: string) {
     this.client = client;
     this.spawnId = spawnId;
+    this.stdout = new events.EventEmitter();
+    this.stderr = new events.EventEmitter();
+    // client
+    toObservable(client)
+      .pipe<ClientMessage>(
+        filter((msg: ClientMessage): boolean => msg.action === "stream-event" && msg.spawnId === spawnId),
+      )
+      .subscribe((msg: ClientMessage) => {
+        switch (msg.action) {
+          case "stream-event":
+            this.onStreamEvent(msg);
+            break;
+          default:
+            throw new Error(`UnexpectedClientMessage: ${JSON.stringify(msg)}`);
+        }
+      });
+  }
+
+  private onStreamEvent(msg: StreamEvent): void {
+    let stream: events.EventEmitter;
+    switch (msg.stream) {
+      case "stdout":
+        stream = this.stdout;
+        break;
+      case "stderr":
+        stream = this.stderr;
+        break;
+      default:
+        throw new Error(`UnexpectedStream: ${JSON.stringify(msg)}`);
+    }
+    switch (msg.event) {
+      case "data":
+        stream.emit("data", Buffer.from(msg.chunk, "hex"));
+        break;
+      case "error":
+        stream.emit("error", Object.assign(new Error(), msg.error));
+        break;
+      case "close":
+      case "end":
+      case "readable":
+        stream.emit(msg.event);
+        break;
+      default:
+        throw new Error(`UnexpectedEvent: ${JSON.stringify(msg)}`);
+    }
   }
 }
 
@@ -115,4 +230,8 @@ export function spawn(
       });
     })();
   });
+}
+
+function toObservable<T>(subscribable: Subscribable<T>): Observable<T> {
+  return new Observable((subscriber) => subscribable.subscribe(subscriber));
 }
