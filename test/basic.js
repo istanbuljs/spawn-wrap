@@ -23,7 +23,7 @@ if (process.argv[2] === 'parent') {
     console.log('EXIT %j', [code, signal])
   })
   var argv = process.argv.slice(3).map(function (arg) {
-    if (arg === fixture) {
+    if (path.resolve(arg) === fixture) {
       return '{{FIXTURE}}'
     }
     return arg
@@ -268,6 +268,20 @@ t.test('exec execPath', function (t) {
         'EXIT [null,"SIGHUP"]\n')
       t.end()
     })
+  })
+})
+
+t.test('windows shebang', function (t) {
+  var child = cp.spawn('env', [fixture, 'xyz'])
+  var out = ''
+  child.stdout.on('data', function (c) {
+    out += c
+  })
+  child.on('close', function (code, signal) {
+    t.equal(code, 0)
+    t.equal(signal, null)
+    t.equal(out, expect)
+    t.end()
   })
 })
 
