@@ -174,7 +174,7 @@ class SimpleChildProcessProxy implements ChildProcessProxy {
     // client
     toObservable(client)
       .pipe<ClientMessage>(
-        filter((msg: ClientMessage): boolean => msg.action === "stream-event" && msg.spawnId === spawnId),
+        filter((msg: ClientMessage): boolean => msg.action === "stream-event" && msg.spawnId === spawnId) as any,
       )
       .subscribe((msg: ClientMessage) => {
         switch (msg.action) {
@@ -270,5 +270,5 @@ export function spawn(
 }
 
 function toObservable<T>(subscribable: Subscribable<T>): Observable<T> {
-  return new Observable((subscriber) => subscribable.subscribe(subscriber));
+  return new Observable((subscriber: any) => subscribable.subscribe(subscriber));
 }

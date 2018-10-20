@@ -244,7 +244,7 @@ function resolvedOptionsToContext(resolved: ResolvedOptions): SwContext {
     module: require.resolve("./index"),
     deps: Object.freeze({
       debug: require.resolve("./debug"),
-      foregroundChild: require.resolve("foreground-child"),
+      foregroundChild: require.resolve("demurgos-foreground-child"),
       isWindows: require.resolve("is-windows"),
       nodeCli: require.resolve("./node-cli"),
       pathEnvVar: require.resolve("./path-env-var"),

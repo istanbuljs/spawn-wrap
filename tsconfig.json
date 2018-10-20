@@ -12,6 +12,7 @@
     "module": "commonjs",
     "moduleResolution": "node",
     "newLine": "lf",
+    "skipLibCheck": true,
     "strict": true,
     "strictNullChecks": true,
     "target": "es2015",

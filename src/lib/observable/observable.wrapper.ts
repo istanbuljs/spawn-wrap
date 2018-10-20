@@ -4,8 +4,9 @@ import stream from "stream";
 import { SwContext } from "../context";
 import { WrapperApi } from "../types";
 import { SpawnClient } from "./client";
-import { foregroundChild } from "./foreground-child";
 import { ProxySpawnMessage, ServerMessage, VoidSpawnMessage } from "./protocol";
+
+// This file should not be executed directly: it must be spawned by the lib
 
 function cpProxy(client: SpawnClient, spawnId: string, proc: cp.ChildProcess): void {
   listen(proc.stdout, "stdout");
@@ -22,29 +23,27 @@ function cpProxy(client: SpawnClient, spawnId: string, proc: cp.ChildProcess): v
     });
     stream.on("close", () => client.next({...partial, event: "close"}));
     stream.on("end", () => client.next({...partial, event: "end"}));
-    stream.on("readable", () => client.next({...partial, event: "readable"}));
+    // We ignore the `readable` event because it conflicts with `data`.
+    // stream.on("readable", () => client.next({...partial, event: "readable"}));
   }
 }
 
-// This file should not be executed directly: it must be spawn
-
 async function proxySpawn(ctx: SwContext, client: SpawnClient, msg: ProxySpawnMessage) {
   const node: string = process.execPath;
-  const proc: cp.ChildProcess = foregroundChild(
-    node,
-    ["--require", ctx.preloadScript, ...msg.args],
-    async () => {
-      return client.close();
-    },
-  );
-  cpProxy(client, msg.spawnId, proc);
+  const foregroundChild = require(ctx.deps.foregroundChild);
+  const {child, close} = foregroundChild.spawn(node, ["--require", ctx.preloadScript, ...msg.args], {stdio: "pipe"});
+  close.then(async (closeFn: any) => {
+    await client.close();
+    closeFn();
+  });
+  cpProxy(client, msg.spawnId, child);
 }
 
 async function voidSpawn(ctx: SwContext, client: SpawnClient, msg: VoidSpawnMessage) {
   client.close();
   const node: string = process.execPath;
   const foregroundChild = require(ctx.deps.foregroundChild);
-  foregroundChild(node, ["--require", ctx.preloadScript, ...msg.args]);
+  foregroundChild.spawn(node, ["--require", ctx.preloadScript, ...msg.args]);
 }
 
 async function main(wrapper: WrapperApi) {
