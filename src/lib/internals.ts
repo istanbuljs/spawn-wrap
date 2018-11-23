@@ -28,12 +28,12 @@ export function patchInternalsWithContext(ctx: SwContext): () => void {
   const spawnSync = (process as any).binding("spawn_sync").spawn;
 
   function unpatch() {
-    (cp as any).ChildProcess.prototype.observeSpawn = spawn;
-    (process as any).binding("spawn_sync").observeSpawn = spawnSync;
+    (cp as any).ChildProcess.prototype.spawn = spawn;
+    (process as any).binding("spawn_sync").spawn = spawnSync;
   }
 
-  (cp as any).ChildProcess.prototype.observeSpawn = wrapInternalSpawn(spawn, ctx);
-  (process as any).binding("spawn_sync").observeSpawn = wrapInternalSpawn(spawnSync, ctx);
+  (cp as any).ChildProcess.prototype.spawn = wrapInternalSpawn(spawn, ctx);
+  (process as any).binding("spawn_sync").spawn = wrapInternalSpawn(spawnSync, ctx);
 
   return unpatch;
 }
