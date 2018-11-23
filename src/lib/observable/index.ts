@@ -220,7 +220,7 @@ class SimpleChildProcessProxy implements ChildProcessProxy {
 /**
  * Spawn options, with custom `spawn` function.
  */
-interface SpawnOptions extends cp.SpawnOptions {
+export interface ObserveSpawnOptions extends cp.SpawnOptions {
   /**
    * Spawn function to use.
    *
@@ -232,10 +232,10 @@ interface SpawnOptions extends cp.SpawnOptions {
   spawn?: typeof cp.spawn;
 }
 
-export function spawn(
+export function observeSpawn(
   file: string,
   args?: ReadonlyArray<string>,
-  options?: SpawnOptions,
+  options?: ObserveSpawnOptions,
 ): Subscribable<SpawnEvent> {
   return new Observable((observer: Observer<SpawnEvent>) => {
     (async () => {
