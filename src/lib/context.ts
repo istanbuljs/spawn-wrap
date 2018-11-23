@@ -3,7 +3,7 @@ import crypto from "crypto";
 import fs from "fs";
 import isWindows from "is-windows";
 import mkdirp from "mkdirp";
-import osHomedir from "os-homedir";
+import os from "os";
 import path from "path";
 import rimraf from "rimraf";
 import signalExit from "signal-exit";
@@ -170,7 +170,7 @@ function getShimRoot(): string {
   if (envShimRoot !== undefined) {
     return envShimRoot;
   }
-  return path.join(osHomedir(), DEFAULT_SHIM_ROOT_NAME);
+  return path.join(os.homedir(), DEFAULT_SHIM_ROOT_NAME);
 }
 
 export async function createWrapContext(options: SwOptions): Promise<SwContext> {

@@ -12,7 +12,7 @@ const npmFixture = require.resolve('./fixtures/npm')
 
 const WRAPPER = require.resolve('./fixtures/basic.wrapper.js')
 
-var unwrap = sw.patchInternals({wrapper: WRAPPER})
+var unwrap = sw.patchInternals({ wrapper: WRAPPER })
 
 var expect = 'WRAP ["{{FIXTURE}}","xyz"]\n' +
   '[]\n' +
@@ -49,7 +49,7 @@ t.test('spawn execPath', function (t) {
     t.end()
   })
 
-  t.test('SIGINT', {skip: winNoSig}, function (t) {
+  t.test('SIGINT', { skip: winNoSig }, function (t) {
     var child = cp.spawn(process.execPath, [fixture, 'xyz'])
 
     var out = ''
@@ -72,7 +72,7 @@ t.test('spawn execPath', function (t) {
     })
   })
 
-  t.test('SIGHUP', {skip: winNoSig}, function (t) {
+  t.test('SIGHUP', { skip: winNoSig }, function (t) {
     var child = cp.spawn(process.execPath, [fixture, 'xyz'])
 
     var out = ''
@@ -119,7 +119,7 @@ t.test('spawn node', function (t) {
     t.end()
   })
 
-  t.test('SIGINT', {skip: winNoSig}, function (t) {
+  t.test('SIGINT', { skip: winNoSig }, function (t) {
     var child = cp.spawn('node', [fixture, 'xyz'])
 
     var out = ''
@@ -142,7 +142,7 @@ t.test('spawn node', function (t) {
     })
   })
 
-  t.test('SIGHUP', {skip: winNoSig}, function (t) {
+  t.test('SIGHUP', { skip: winNoSig }, function (t) {
     var child = cp.spawn('node', [fixture, 'xyz'])
 
     var out = ''
@@ -166,7 +166,7 @@ t.test('exec execPath', function (t) {
   t.plan(4)
 
   t.test('basic', function (t) {
-    var opt = isWindows() ? null : {shell: '/bin/bash'}
+    var opt = isWindows() ? null : { shell: '/bin/bash' }
     var child = cp.exec('"' + process.execPath + '" "' + fixture + '" xyz', opt)
 
     var out = ''
@@ -182,7 +182,7 @@ t.test('exec execPath', function (t) {
   })
 
   t.test('execPath wrapped with quotes', function (t) {
-    var opt = isWindows() ? null : {shell: '/bin/bash'}
+    var opt = isWindows() ? null : { shell: '/bin/bash' }
     var child = cp.exec(JSON.stringify(process.execPath) + ' ' + fixture +
       ' xyz', opt)
 
@@ -198,8 +198,8 @@ t.test('exec execPath', function (t) {
     })
   })
 
-  t.test('SIGINT', {skip: winNoSig}, function (t) {
-    var child = cp.exec(process.execPath + ' ' + fixture + ' xyz', {shell: '/bin/bash'})
+  t.test('SIGINT', { skip: winNoSig }, function (t) {
+    var child = cp.exec(process.execPath + ' ' + fixture + ' xyz', { shell: '/bin/bash' })
 
     var out = ''
     child.stdout.on('data', function (c) {
@@ -221,8 +221,8 @@ t.test('exec execPath', function (t) {
     })
   })
 
-  t.test('SIGHUP', {skip: winNoSig}, function (t) {
-    var child = cp.exec(process.execPath + ' ' + fixture + ' xyz', {shell: '/bin/bash'})
+  t.test('SIGHUP', { skip: winNoSig }, function (t) {
+    var child = cp.exec(process.execPath + ' ' + fixture + ' xyz', { shell: '/bin/bash' })
 
     var out = ''
     child.stdout.on('data', function (c) {
@@ -241,11 +241,11 @@ t.test('exec execPath', function (t) {
   })
 })
 
-t.test('exec shebang', {skip: winNoShebang}, function (t) {
+t.test('exec shebang', { skip: winNoShebang }, function (t) {
   t.plan(3)
 
   t.test('basic', function (t) {
-    var child = cp.exec(fixture + ' xyz', {shell: '/bin/bash'})
+    var child = cp.exec(fixture + ' xyz', { shell: '/bin/bash' })
 
     var out = ''
     child.stdout.on('data', function (c) {
@@ -260,7 +260,7 @@ t.test('exec shebang', {skip: winNoShebang}, function (t) {
   })
 
   t.test('SIGHUP', function (t) {
-    var child = cp.exec(fixture + ' xyz', {shell: '/bin/bash'})
+    var child = cp.exec(fixture + ' xyz', { shell: '/bin/bash' })
 
     var out = ''
     child.stdout.on('data', function (c) {
@@ -279,7 +279,7 @@ t.test('exec shebang', {skip: winNoShebang}, function (t) {
   })
 
   t.test('SIGINT', function (t) {
-    var child = cp.exec(fixture + ' xyz', {shell: '/bin/bash'})
+    var child = cp.exec(fixture + ' xyz', { shell: '/bin/bash' })
 
     var out = ''
     child.stdout.on('data', function (c) {
@@ -303,7 +303,7 @@ t.test('exec shebang', {skip: winNoShebang}, function (t) {
 })
 
 // see: https://github.com/bcoe/nyc/issues/190
-t.test('Node 5.8.x + npm 3.7.x - spawn', {skip: winNoShebang}, function (t) {
+t.test('Node 5.8.x + npm 3.7.x - spawn', { skip: winNoShebang }, function (t) {
   var npmdir = path.dirname(npmFixture)
   process.env.PATH = npmdir + ':' + (process.env.PATH || '')
   var child = cp.spawn('npm', ['xyz'])
@@ -320,7 +320,7 @@ t.test('Node 5.8.x + npm 3.7.x - spawn', {skip: winNoShebang}, function (t) {
   })
 })
 
-t.test('Node 5.8.x + npm 3.7.x - shell', {skip: winNoShebang}, function (t) {
+t.test('Node 5.8.x + npm 3.7.x - shell', { skip: winNoShebang }, function (t) {
   var npmdir = path.dirname(npmFixture)
   process.env.PATH = npmdir + ':' + (process.env.PATH || '')
   var child = cp.exec('npm xyz')

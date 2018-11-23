@@ -12,7 +12,7 @@ const spawn = cp.spawn
 const nodes = ['node', process.execPath]
 const WRAPPER = require.resolve('./fixtures/exec-flag.wrapper.js')
 
-sw.patchInternals({wrapper: WRAPPER})
+sw.patchInternals({ wrapper: WRAPPER })
 
 t.test('try to wrap a -e invocation but it isnt wrapped', function (t) {
   nodes.forEach(function (node) {
@@ -24,7 +24,7 @@ t.test('try to wrap a -e invocation but it isnt wrapped', function (t) {
       child.stderr.pipe(process.stderr)
       child.on('close', function (code, signal) {
         const out = Buffer.concat(outChunks).toString('UTF-8')
-        const actual = {out, code, signal}
+        const actual = { out, code, signal }
         const expect = {
           out: 'hello\n',
           code: 0,
