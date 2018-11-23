@@ -3,7 +3,7 @@ import cp, { ChildProcess } from "child_process";
 import events from "events";
 import { Observable, Observer, Subscribable, Unsubscribable } from "rxjs";
 import { filter } from "rxjs/operators";
-import { withSpawnWrap } from "../local";
+import { Api, withSpawnWrap, WithSwOptions } from "../local";
 import { SwOptions } from "../types";
 import { ClientMessage, InfoMessage, StreamEvent } from "./protocol";
 import { RemoteSpawnClient, SpawnServer } from "./server";
@@ -217,10 +217,25 @@ class SimpleChildProcessProxy implements ChildProcessProxy {
   }
 }
 
+/**
+ * Spawn options, with custom `spawn` function.
+ */
+interface SpawnOptions extends cp.SpawnOptions {
+  /**
+   * Spawn function to use.
+   *
+   * You can supply your own spawn function.
+   * For example, you can use `cross-spawn` or a `spawn-wrap` function.
+   *
+   * Default: `require("child_process").spawn`
+   */
+  spawn?: typeof cp.spawn;
+}
+
 export function spawn(
   file: string,
   args?: ReadonlyArray<string>,
-  options?: cp.SpawnOptions,
+  options?: SpawnOptions,
 ): Subscribable<SpawnEvent> {
   return new Observable((observer: Observer<SpawnEvent>) => {
     (async () => {
@@ -244,13 +259,16 @@ export function spawn(
         });
       });
 
-      const swOptions: SwOptions = {
+      const api: Api | undefined = options !== undefined && options.spawn !== undefined ? {spawn: options.spawn} : undefined;
+
+      const swOptions: WithSwOptions = {
         wrapper: OBSERVABLE_WRAPPER,
         data: {
           host: server.host,
           port: server.port,
         },
         sameProcess: false,
+        api,
       };
 
       withSpawnWrap(swOptions, async (api) => {
