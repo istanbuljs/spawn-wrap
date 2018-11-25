@@ -14,8 +14,14 @@ const WRAPPER = require.resolve('./fixtures/basic.wrapper.js')
 
 var unwrap = sw.patchInternals({ wrapper: WRAPPER, mode: 'same-process' })
 
-var expect = 'WRAP ["--","{{FIXTURE}}","xyz"]\n' +
-  '["--"]\n' +
+const NODE_MAJOR_VERSION = parseInt(process.versions.node.split('.')[0])
+// https://github.com/nodejs/node/issues/24647
+const DOUBLE_DASH = NODE_MAJOR_VERSION >= 10 ? '"--"' : ''
+const DOUBLE_DASH_COMMA = NODE_MAJOR_VERSION >= 10 ? '"--",' : ''
+const COMMA_DOUBLE_DASH = NODE_MAJOR_VERSION >= 10 ? ',"--"' : ''
+
+var expect = 'WRAP [' + DOUBLE_DASH_COMMA + '"{{FIXTURE}}","xyz"]\n' +
+  '[' + DOUBLE_DASH + ']\n' +
   '["xyz"]\n' +
   'EXIT [0,null]\n'
 
@@ -63,8 +69,8 @@ t.test('spawn execPath', function (t) {
     child.on('close', function (code, signal) {
       t.equal(code, 0)
       t.equal(signal, null)
-      t.equal(out, 'WRAP ["--","{{FIXTURE}}","xyz"]\n' +
-        '["--"]\n' +
+      t.equal(out, 'WRAP [' + DOUBLE_DASH_COMMA + '"{{FIXTURE}}","xyz"]\n' +
+        '[' + DOUBLE_DASH + ']\n' +
         '["xyz"]\n' +
         'SIGINT\n' +
         'EXIT [0,null]\n')
@@ -82,8 +88,8 @@ t.test('spawn execPath', function (t) {
     })
     child.on('close', function (code, signal) {
       t.equal(signal, 'SIGHUP')
-      t.equal(out, 'WRAP ["--","{{FIXTURE}}","xyz"]\n' +
-        '["--"]\n' +
+      t.equal(out, 'WRAP [' + DOUBLE_DASH_COMMA + '"{{FIXTURE}}","xyz"]\n' +
+        '[' + DOUBLE_DASH + ']\n' +
         '["xyz"]\n' +
         'SIGHUP\n' +
         'EXIT [null,"SIGHUP"]\n')
@@ -133,8 +139,8 @@ t.test('spawn node', function (t) {
     child.on('close', function (code, signal) {
       t.equal(code, 0)
       t.equal(signal, null)
-      t.equal(out, 'WRAP ["--","{{FIXTURE}}","xyz"]\n' +
-        '["--"]\n' +
+      t.equal(out, 'WRAP [' + DOUBLE_DASH_COMMA + '"{{FIXTURE}}","xyz"]\n' +
+        '[' + DOUBLE_DASH + ']\n' +
         '["xyz"]\n' +
         'SIGINT\n' +
         'EXIT [0,null]\n')
@@ -152,8 +158,8 @@ t.test('spawn node', function (t) {
     })
     child.on('close', function (code, signal) {
       t.equal(signal, 'SIGHUP')
-      t.equal(out, 'WRAP ["--","{{FIXTURE}}","xyz"]\n' +
-        '["--"]\n' +
+      t.equal(out, 'WRAP [' + DOUBLE_DASH_COMMA + '"{{FIXTURE}}","xyz"]\n' +
+        '[' + DOUBLE_DASH + ']\n' +
         '["xyz"]\n' +
         'SIGHUP\n' +
         'EXIT [null,"SIGHUP"]\n')
@@ -212,8 +218,8 @@ t.test('exec execPath', function (t) {
     child.on('close', function (code, signal) {
       t.equal(code, 0)
       t.equal(signal, null)
-      t.equal(out, 'WRAP ["--","{{FIXTURE}}","xyz"]\n' +
-        '["--"]\n' +
+      t.equal(out, 'WRAP [' + DOUBLE_DASH_COMMA + '"{{FIXTURE}}","xyz"]\n' +
+        '[' + DOUBLE_DASH + ']\n' +
         '["xyz"]\n' +
         'SIGINT\n' +
         'EXIT [0,null]\n')
@@ -231,8 +237,8 @@ t.test('exec execPath', function (t) {
     })
     child.on('close', function (code, signal) {
       t.equal(signal, 'SIGHUP')
-      t.equal(out, 'WRAP ["--","{{FIXTURE}}","xyz"]\n' +
-        '["--"]\n' +
+      t.equal(out, 'WRAP [' + DOUBLE_DASH_COMMA + '"{{FIXTURE}}","xyz"]\n' +
+        '[' + DOUBLE_DASH + ']\n' +
         '["xyz"]\n' +
         'SIGHUP\n' +
         'EXIT [null,"SIGHUP"]\n')
@@ -269,8 +275,8 @@ t.test('exec shebang', { skip: winNoShebang }, function (t) {
     })
     child.on('close', function (code, signal) {
       t.equal(signal, 'SIGHUP')
-      t.equal(out, 'WRAP ["--","{{FIXTURE}}","xyz"]\n' +
-        '["--"]\n' +
+      t.equal(out, 'WRAP [' + DOUBLE_DASH_COMMA + '"{{FIXTURE}}","xyz"]\n' +
+        '[' + DOUBLE_DASH + ']\n' +
         '["xyz"]\n' +
         'SIGHUP\n' +
         'EXIT [null,"SIGHUP"]\n')
@@ -292,8 +298,8 @@ t.test('exec shebang', { skip: winNoShebang }, function (t) {
     child.on('close', function (code, signal) {
       t.equal(code, 0)
       t.equal(signal, null)
-      t.equal(out, 'WRAP ["--","{{FIXTURE}}","xyz"]\n' +
-        '["--"]\n' +
+      t.equal(out, 'WRAP [' + DOUBLE_DASH_COMMA + '"{{FIXTURE}}","xyz"]\n' +
+        '[' + DOUBLE_DASH + ']\n' +
         '["xyz"]\n' +
         'SIGINT\n' +
         'EXIT [0,null]\n')
@@ -352,8 +358,8 @@ t.test('--harmony', function (t) {
   child.on('close', function (code, signal) {
     t.equal(code, 0)
     t.equal(signal, null)
-    t.equal(out, 'WRAP ["--harmony","--","{{FIXTURE}}","xyz"]\n' +
-      '["--harmony","--"]\n' +
+    t.equal(out, 'WRAP ["--harmony",' + DOUBLE_DASH_COMMA + '"{{FIXTURE}}","xyz"]\n' +
+      '["--harmony"' + COMMA_DOUBLE_DASH + ']\n' +
       '["xyz"]\n' +
       'EXIT [0,null]\n')
     t.end()
