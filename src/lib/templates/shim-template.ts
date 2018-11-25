@@ -19,14 +19,28 @@ declare const context: SwContext;
 
 // tslint:disable:no-var-requires
 const {debug} = require(context.deps.debug);
-const {getMainIndex} = require(context.deps.nodeCli);
 const {removeFromPathEnv, isPathEnvName} = require(context.deps.pathEnvVar);
+const {parseNodeOptions} = require(context.deps.parseNodeOptions);
 const foregroundChild = require(context.deps.foregroundChild);
 const isWindows = require(context.deps.isWindows);
 const spawnWrap = require(context.module);
 const Module = require("module");
 const path = require("path");
 
+/**
+ * Runs the shim
+ *
+ * The shim may be invoked as one of the following ways:
+ *
+ * ```
+ * # sameProcess mode and patched spawn call:
+ * /path/to/bin/node ...execArgs -- /path/to/shim.js main.js ...args
+ * # subProcess mode and patched spawn call:
+ * /path/to/bin/node -- /path/to/shim.js ...execArgs main.js ...args
+ * # Unpatched call (for example intercepted using the PATH)
+ * /path/to/bin/node /path/to/shim.js ...execArgs main.js ...args
+ * ```
+ */
 function shimMain() {
   if (module !== require.main) {
     throw new Error("spawn-wrap: cli wrapper invoked as non-main script");
@@ -35,44 +49,50 @@ function shimMain() {
 
   const originalArgs: ReadonlyArray<string> = process.argv.slice(2);
 
-  // Argv coming in looks like:
-  // bin shim execArgv main argv
-  //
-  // Turn it into:
-  // bin context.execArgv execArgv context.argv main argv
-  //
-  // If we don't have a main script, then just run with the necessary
-  // execArgv
-  const mainIdx: number | undefined = getMainIndex(originalArgs);
-  debug("after argv parse mainIdx=%j", mainIdx);
+  let args: ReadonlyArray<string>;
 
   if (context.sameProcess) {
-    if (mainIdx === undefined) {
-      // we got loaded by mistake for a `node -pe script` or something.
-      debug("no main file!", originalArgs);
+    // user args: no exec args and no shim path
+    const userArgs: ReadonlyArray<string> = [process.argv[0]].concat(originalArgs);
+    const parsed: any = parseNodeOptions(userArgs);
+    if (parsed.appArgs.length === 0 || parsed.hasEval || parsed.hasInteractive) {
+      // Avoid running the wrapper in same process mode if node is used without a script
+      // Can happen for example if we intercept `node -e <...>`
+      debug("no main file!");
       foregroundChild(process.execPath, originalArgs);
       return;
     }
-
-    // Ensure that the execArgv are properly set for the child process.
-    // This requires spawning a subProcess, even in `sameProcess` mode.
-    if (mainIdx > 0) {
-      const subArgs: ReadonlyArray<string> = [
-        ...originalArgs.slice(0, mainIdx),
+    if (parsed.execArgs.length > 0) {
+      // `process.argv` starts with some non-applied exec args: we need to spawn
+      // a subprocess to apply them.
+      const fixedArgs: ReadonlyArray<string> = [
+        ...withoutTrailingDoubleDash(process.execArgv),
+        parsed.execArgs,
+        "--",
         __filename,
-        ...originalArgs.slice(mainIdx),
+        ...parsed.appArgs,
       ];
-      foregroundChild(process.execPath, subArgs);
+      foregroundChild(process.execPath, fixedArgs);
       return;
     }
+    // If we reached this point, it means that we were called as:
+    // `/path/to/node ...execArgs /path/to/shim ...userAppArgs`
+    args = [...originalArgs];
+  } else {
+    // Subprocess mode
+    // `process.execArgv` should be empty or `--` so we only pass the user args.
+    // Which will contain the user exec args and app args.
+    // If we wanted to add it, it should be passed to withoutTrailingDoubleDash
+    // first to ensure that the user exec args are still applied.
+    args = [...originalArgs];
   }
 
-  // This will be readded when a process is spawned through a patched spawn.
+  // This will be insert again when a process is spawned through a patched spawn.
   removeShimDirFromPath();
 
   const wrapperApi: WrapperApi = {
     context,
-    args: Object.freeze([...originalArgs]),
+    args: Object.freeze(args),
   };
 
   // Replace the shim script with the wrapper so it looks like the main
@@ -82,7 +102,7 @@ function shimMain() {
     spawnWrap.patchInternalsWithContext(context);
 
     function runMain(): void {
-      // Remove the wrapper, so the real main looks like the main
+      // Remove the wrapper, so the real main looks like the main module
       process.argv.splice(1, 1);
       const main: string = path.resolve(process.argv[1]);
       delete require.cache[main];
@@ -122,6 +142,13 @@ function requireWrapper(): ((wrapperApi: WrapperApi) => any) | undefined {
   } else if (typeof wrapper === "object" && wrapper !== null && typeof wrapper.default === "function") {
     return wrapper.default;
   }
+}
+
+function withoutTrailingDoubleDash(args: ReadonlyArray<string>): ReadonlyArray<string> {
+  if (args.length > 0 && args[args.length - 1] === "--") {
+    return args.slice(0, args.length - 1);
+  }
+  return args;
 }
 
 shimMain();

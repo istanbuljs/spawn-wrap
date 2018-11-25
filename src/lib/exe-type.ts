@@ -6,9 +6,13 @@ export function isCmd(file: string): boolean {
   return isWindows() && (file === comspec || /^cmd(?:\.exe)?$/i.test(file));
 }
 
+export function isEnv(file: string): boolean {
+  return file === "env";
+}
+
 export function isNode(file: string): boolean {
   const cmdname = getExeBasename(process.execPath);
-  return file === "node" || cmdname === file;
+  return file === "node" || file === cmdname;
 }
 
 export function isNpm(file: string): boolean {

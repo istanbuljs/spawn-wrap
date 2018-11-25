@@ -26,7 +26,7 @@ export function mungeCmd(ctx: SwContext, options: NormalizedOptions): Normalized
     const tail: string = nodeMatch[4];
 
     const newArgs: string[] = [...options.args];
-    newArgs[cmdIndex] = `${startDelimiter}${originalNode}${endDelimiter} "${ctx.shimScript}" ${tail}`;
+    newArgs[cmdIndex] = `${startDelimiter}${originalNode}${endDelimiter} -- "${ctx.shimScript}" ${tail}`;
     return {...options, args: newArgs};
   }
 

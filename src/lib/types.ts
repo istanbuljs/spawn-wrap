@@ -71,7 +71,29 @@ export interface InternalSpawnOptions {
  * Options transformed by the mungers.
  */
 export interface NormalizedOptions {
+  /**
+   * Executable path
+   *
+   * Relative or absolute.
+   */
   readonly file: string;
+
+  /**
+   * Argv0 followed by arguments.
+   *
+   * Argv0 is often the same as `file` but not always (can be changed with the
+   * `spawn` option `argv0`).
+   * Example:
+   * ```
+   * ["node", "--experimental-modules", "main.mjs"]
+   * ```
+   */
   readonly args: ReadonlyArray<string>;
+
+  /**
+   * Map of environment variables.
+   *
+   * The map is case sensitive and can contain both `path` and `PATH`.
+   */
   readonly env: ReadonlyMap<string, string>;
 }

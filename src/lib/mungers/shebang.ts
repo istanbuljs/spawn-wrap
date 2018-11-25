@@ -1,6 +1,6 @@
 import fs from "fs";
 import { SwContext } from "../context";
-import { getExeBasename, isNode } from "../exe-type";
+import { getExeBasename, isEnv, isNode } from "../exe-type";
 import { NormalizedOptions } from "../types";
 import { whichOrUndefined } from "../which-or-undefined";
 
@@ -17,19 +17,46 @@ export function mungeShebang(ctx: SwContext, options: NormalizedOptions): Normal
     return options;
   }
 
-  const shebangExe = match[1].split(" ")[0];
-  const maybeNode = getExeBasename(shebangExe);
-  if (!isNode(maybeNode)) {
-    // not a node shebang, leave untouched
-    return options;
+  const shebangComponents: ReadonlyArray<string> = match[1].split(" ");
+  let shebangExe: string;
+  let shebangTail: ReadonlyArray<string>;
+  // TODO: Handle shebang args, currently `shebangTail` is always an empty array
+  switch (shebangComponents.length) {
+    case 1: {
+      // Try to recognize `#!/usr/bin/node`
+      const maybeNode: string = getExeBasename(shebangComponents[0]);
+      if (!isNode(maybeNode)) {
+        // not a node shebang, leave untouched
+        return options;
+      }
+      shebangExe = shebangComponents[0];
+      shebangTail = shebangComponents.slice(1);
+      break;
+    }
+    case 2: {
+      // Try to recognize `#!/usr/bin/env node`
+      if (!isEnv(getExeBasename(shebangComponents[0]))) {
+        return options;
+      }
+      const maybeNode: string | undefined = whichOrUndefined(shebangComponents[1]);
+      if (maybeNode === undefined || !isNode(getExeBasename(maybeNode))) {
+        // not a node shebang, leave untouched
+        return options;
+      }
+      shebangExe = maybeNode;
+      shebangTail = shebangComponents.slice(2);
+      break;
+    }
+    default:
+      return options;
   }
 
   // options.originalNode = shebangExe;
   // options.basename = maybeNode;
   const newFile: string = shebangExe;
-  const newArgs = [shebangExe, ctx.shimScript]
+  const newArgs = [shebangExe, "--", ctx.shimScript]
     .concat(resolved)
-    .concat(match[1].split(" ").slice(1))
+    .concat(shebangTail)
     .concat(options.args.slice(1));
 
   return {...options, file: newFile, args: newArgs};

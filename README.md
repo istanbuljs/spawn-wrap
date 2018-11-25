@@ -221,17 +221,20 @@ adhered to, despite best efforts:
 ## How it works
 
 When you create a new wrapper, the library starts by creating a context
-(SwContext). This is a snapshot of the arguments and environment variables
-you passed, but also path to the current Node process and library.
+(SwContext). This is an object storing the user options (wrapper path, wrapper
+data, sameProcess mode) and extra data such as a unique key and the absolute
+paths to the Node process, `spawn-wrap`, a few dependencies and the shims.
 
 During the creation of the context, a "shim directory" is written (by default,
 it is a unique directory inside `~/.node-spawn-wrap`). This directory contains
-executables ("shims") are intended to act as Node but inject the wrapping logic.
+executables ("shims") that are intended to intercept system calls to spawn
+Node processes and instead trigger the wrapping logic.
 
-These executables are auto-generated and the context is embedded in them:
-executing any of them will trigger the wrapping code.
+The shims are auto-generated executables. The context is embedded in them.
+Their role is to patch of internals of the current Node process, load the
+wrapper and execute them.
 One shim is created with the name `node`, and eventually another one with the
-same name as the root process (for example `iojs` if the root process was
+same basename as the root process (for example `iojs` if the root process was
 named `iojs` instead of `node`). These shims are executable scripts with a
 shebang. For Windows, a `.cmd` file is created for each shim: for example
 `node.cmd` to open the `node` shim.
@@ -253,7 +256,7 @@ The action of rewriting the spawn options is called "munging" in the lib.
 The goal is to replace any invocation of the real Node with one of the shims.
 The munging has a file-specific step and a general environment patching step.
 The munger will use the name (or try to read the shebang) of the spawned file
-to try to perform application-specific transformations. It currently detects
+to perform application-specific transformations. It currently detects
 when you spawn another Node process, `npm`, `cmd` or a known POSIX shell
 (`sh`, `bash`, ...).
 If you are spawning a shell, it will try to detect if you use the shell to
@@ -272,7 +275,26 @@ first location in the `PATH` environment variable. It means that any subprocess
 inheriting this environment and trying to spawn Node using `node` instead of
 an absolute path will default to use the shim executable.
 
-TODO: Explain the magic inside the shim script
+### Arguments
+
+The library distinguishes between two types of arguments: execution arguments
+(`execArgs` and application arguments (`args`). Execution arguments control the
+Node engine. They corresponds to the flags described in `node --help`. For
+example `["--eval", "2+2"]`, `["--require", "/foo.js"]` or
+`["--experimental-modules"]`. The application arguments are the path to the
+executable (e.g. `/usr/bin/node`) and other remaining arguments such as the
+path to the script to run.
+The execution arguments can be read as `process.execArgv` while the application
+arguments are in `process.args`.
+
+The application arguments are only handled by user code so it there are no
+real constraint to modify them in the wrapper before running the main module.
+On the other hand, execution arguments are only applied when the application
+starts. If you want to modify them, you need to pass the updated execution
+arguments to a subprocess.
+
+For this reason, in `sameProcess=false` mode, the execution arguments are not
+applied to the wrapper but to the child subprocess.
 
 ## Migrating from version `1.x` to `2.x`
 

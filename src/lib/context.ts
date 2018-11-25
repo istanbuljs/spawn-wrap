@@ -27,7 +27,7 @@ export interface SwContext<D = any> {
   /**
    * Absolute system path for the corresponding dependencies.
    */
-  readonly deps: Readonly<Record<"debug" | "foregroundChild" | "isWindows" | "nodeCli" | "pathEnvVar" | "signalExit", string>>;
+  readonly deps: Readonly<Record<"debug" | "foregroundChild" | "isWindows" | "pathEnvVar" | "parseNodeOptions" | "signalExit", string>>;
 
   /**
    * Unique key identifying this context.
@@ -79,6 +79,17 @@ export interface SwContext<D = any> {
 
   readonly data: D;
 
+  /**
+   * Run the wrapper and child process in the same process.
+   *
+   * Using the same process allows to reduce memory usage and improve speed
+   * but prevents changing the node engine flags (such as
+   * `--experimental-modules`) dynamically inside the wrapper.
+   * If the spawned node process uses node engine flags, multiple processes
+   * may be used.
+   *
+   * Default: `true`.
+   */
   readonly sameProcess: boolean;
 
   /**
@@ -246,8 +257,8 @@ function resolvedOptionsToContext(resolved: ResolvedOptions): SwContext {
       debug: require.resolve("./debug"),
       foregroundChild: require.resolve("demurgos-foreground-child"),
       isWindows: require.resolve("is-windows"),
-      nodeCli: require.resolve("./node-cli"),
       pathEnvVar: require.resolve("./path-env-var"),
+      parseNodeOptions: require.resolve("./parse-node-options"),
       signalExit: require.resolve("signal-exit"),
     }),
     key: resolved.key,

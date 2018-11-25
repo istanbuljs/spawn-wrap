@@ -14,8 +14,8 @@ const WRAPPER = require.resolve('./fixtures/basic.wrapper.js')
 
 var unwrap = sw.patchInternals({ wrapper: WRAPPER })
 
-var expect = 'WRAP ["{{FIXTURE}}","xyz"]\n' +
-  '[]\n' +
+var expect = 'WRAP ["--","{{FIXTURE}}","xyz"]\n' +
+  '["--"]\n' +
   '["xyz"]\n' +
   'EXIT [0,null]\n'
 
@@ -63,8 +63,8 @@ t.test('spawn execPath', function (t) {
     child.on('close', function (code, signal) {
       t.equal(code, 0)
       t.equal(signal, null)
-      t.equal(out, 'WRAP ["{{FIXTURE}}","xyz"]\n' +
-        '[]\n' +
+      t.equal(out, 'WRAP ["--","{{FIXTURE}}","xyz"]\n' +
+        '["--"]\n' +
         '["xyz"]\n' +
         'SIGINT\n' +
         'EXIT [0,null]\n')
@@ -82,8 +82,8 @@ t.test('spawn execPath', function (t) {
     })
     child.on('close', function (code, signal) {
       t.equal(signal, 'SIGHUP')
-      t.equal(out, 'WRAP ["{{FIXTURE}}","xyz"]\n' +
-        '[]\n' +
+      t.equal(out, 'WRAP ["--","{{FIXTURE}}","xyz"]\n' +
+        '["--"]\n' +
         '["xyz"]\n' +
         'SIGHUP\n' +
         'EXIT [null,"SIGHUP"]\n')
@@ -133,8 +133,8 @@ t.test('spawn node', function (t) {
     child.on('close', function (code, signal) {
       t.equal(code, 0)
       t.equal(signal, null)
-      t.equal(out, 'WRAP ["{{FIXTURE}}","xyz"]\n' +
-        '[]\n' +
+      t.equal(out, 'WRAP ["--","{{FIXTURE}}","xyz"]\n' +
+        '["--"]\n' +
         '["xyz"]\n' +
         'SIGINT\n' +
         'EXIT [0,null]\n')
@@ -152,8 +152,8 @@ t.test('spawn node', function (t) {
     })
     child.on('close', function (code, signal) {
       t.equal(signal, 'SIGHUP')
-      t.equal(out, 'WRAP ["{{FIXTURE}}","xyz"]\n' +
-        '[]\n' +
+      t.equal(out, 'WRAP ["--","{{FIXTURE}}","xyz"]\n' +
+        '["--"]\n' +
         '["xyz"]\n' +
         'SIGHUP\n' +
         'EXIT [null,"SIGHUP"]\n')
@@ -212,8 +212,8 @@ t.test('exec execPath', function (t) {
     child.on('close', function (code, signal) {
       t.equal(code, 0)
       t.equal(signal, null)
-      t.equal(out, 'WRAP ["{{FIXTURE}}","xyz"]\n' +
-        '[]\n' +
+      t.equal(out, 'WRAP ["--","{{FIXTURE}}","xyz"]\n' +
+        '["--"]\n' +
         '["xyz"]\n' +
         'SIGINT\n' +
         'EXIT [0,null]\n')
@@ -231,8 +231,8 @@ t.test('exec execPath', function (t) {
     })
     child.on('close', function (code, signal) {
       t.equal(signal, 'SIGHUP')
-      t.equal(out, 'WRAP ["{{FIXTURE}}","xyz"]\n' +
-        '[]\n' +
+      t.equal(out, 'WRAP ["--","{{FIXTURE}}","xyz"]\n' +
+        '["--"]\n' +
         '["xyz"]\n' +
         'SIGHUP\n' +
         'EXIT [null,"SIGHUP"]\n')
@@ -245,7 +245,7 @@ t.test('exec shebang', { skip: winNoShebang }, function (t) {
   t.plan(3)
 
   t.test('basic', function (t) {
-    var child = cp.exec(fixture + ' xyz', { shell: '/bin/bash' })
+    var child = cp.spawn(fixture, ['xyz'])
 
     var out = ''
     child.stdout.on('data', function (c) {
@@ -260,7 +260,7 @@ t.test('exec shebang', { skip: winNoShebang }, function (t) {
   })
 
   t.test('SIGHUP', function (t) {
-    var child = cp.exec(fixture + ' xyz', { shell: '/bin/bash' })
+    var child = cp.spawn(fixture, ['xyz'])
 
     var out = ''
     child.stdout.on('data', function (c) {
@@ -269,8 +269,8 @@ t.test('exec shebang', { skip: winNoShebang }, function (t) {
     })
     child.on('close', function (code, signal) {
       t.equal(signal, 'SIGHUP')
-      t.equal(out, 'WRAP ["{{FIXTURE}}","xyz"]\n' +
-        '[]\n' +
+      t.equal(out, 'WRAP ["--","{{FIXTURE}}","xyz"]\n' +
+        '["--"]\n' +
         '["xyz"]\n' +
         'SIGHUP\n' +
         'EXIT [null,"SIGHUP"]\n')
@@ -279,7 +279,7 @@ t.test('exec shebang', { skip: winNoShebang }, function (t) {
   })
 
   t.test('SIGINT', function (t) {
-    var child = cp.exec(fixture + ' xyz', { shell: '/bin/bash' })
+    var child = cp.spawn(fixture, ['xyz'])
 
     var out = ''
     child.stdout.on('data', function (c) {
@@ -292,8 +292,8 @@ t.test('exec shebang', { skip: winNoShebang }, function (t) {
     child.on('close', function (code, signal) {
       t.equal(code, 0)
       t.equal(signal, null)
-      t.equal(out, 'WRAP ["{{FIXTURE}}","xyz"]\n' +
-        '[]\n' +
+      t.equal(out, 'WRAP ["--","{{FIXTURE}}","xyz"]\n' +
+        '["--"]\n' +
         '["xyz"]\n' +
         'SIGINT\n' +
         'EXIT [0,null]\n')
@@ -352,8 +352,8 @@ t.test('--harmony', function (t) {
   child.on('close', function (code, signal) {
     t.equal(code, 0)
     t.equal(signal, null)
-    t.equal(out, 'WRAP ["--harmony","{{FIXTURE}}","xyz"]\n' +
-      '["--harmony"]\n' +
+    t.equal(out, 'WRAP ["--harmony","--","{{FIXTURE}}","xyz"]\n' +
+      '["--harmony","--"]\n' +
       '["xyz"]\n' +
       'EXIT [0,null]\n')
     t.end()
