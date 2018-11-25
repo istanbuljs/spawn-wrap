@@ -22,7 +22,6 @@ const {debug} = require(context.deps.debug);
 const {removeFromPathEnv, isPathEnvName} = require(context.deps.pathEnvVar);
 const {parseNodeOptions} = require(context.deps.parseNodeOptions);
 const foregroundChild = require(context.deps.foregroundChild);
-const isWindows = require(context.deps.isWindows);
 const spawnWrap = require(context.module);
 const Module = require("module");
 const path = require("path");
@@ -51,40 +50,47 @@ function shimMain() {
 
   let args: ReadonlyArray<string>;
 
-  if (context.sameProcess) {
-    // user args: no exec args and no shim path
-    const userArgs: ReadonlyArray<string> = [process.argv[0]].concat(originalArgs);
-    const parsed: any = parseNodeOptions(userArgs);
-    if (parsed.appArgs.length === 0 || parsed.hasEval || parsed.hasInteractive) {
-      // Avoid running the wrapper in same process mode if node is used without a script
-      // Can happen for example if we intercept `node -e <...>`
-      debug("no main file!");
-      foregroundChild(process.execPath, originalArgs);
-      return;
+  switch (context.mode) {
+    case "same-process": {
+      // user args: no exec args and no shim path
+      const userArgs: ReadonlyArray<string> = [process.argv[0]].concat(originalArgs);
+      const parsed: any = parseNodeOptions(userArgs);
+      if (parsed.appArgs.length === 0 || parsed.hasEval || parsed.hasInteractive) {
+        // Avoid running the wrapper in same process mode if node is used without a script
+        // Can happen for example if we intercept `node -e <...>`
+        debug("no main file!");
+        foregroundChild(process.execPath, originalArgs);
+        return;
+      }
+      if (parsed.execArgs.length > 0) {
+        // `process.argv` starts with some non-applied exec args: we need to spawn
+        // a subprocess to apply them.
+        const fixedArgs: ReadonlyArray<string> = [
+          ...withoutTrailingDoubleDash(process.execArgv),
+          parsed.execArgs,
+          "--",
+          __filename,
+          ...parsed.appArgs,
+        ];
+        foregroundChild(process.execPath, fixedArgs);
+        return;
+      }
+      // If we reached this point, it means that we were called as:
+      // `/path/to/node ...execArgs /path/to/shim ...userAppArgs`
+      args = [...originalArgs];
+      break;
     }
-    if (parsed.execArgs.length > 0) {
-      // `process.argv` starts with some non-applied exec args: we need to spawn
-      // a subprocess to apply them.
-      const fixedArgs: ReadonlyArray<string> = [
-        ...withoutTrailingDoubleDash(process.execArgv),
-        parsed.execArgs,
-        "--",
-        __filename,
-        ...parsed.appArgs,
-      ];
-      foregroundChild(process.execPath, fixedArgs);
-      return;
+    case "sub-process": {
+      // `process.execArgv` should be empty or `--` so we only pass the user args.
+      // Which will contain the user exec args and app args.
+      // If we wanted to add it, it should be passed to withoutTrailingDoubleDash
+      // first to ensure that the user exec args are still applied.
+      args = [...originalArgs];
+      break;
     }
-    // If we reached this point, it means that we were called as:
-    // `/path/to/node ...execArgs /path/to/shim ...userAppArgs`
-    args = [...originalArgs];
-  } else {
-    // Subprocess mode
-    // `process.execArgv` should be empty or `--` so we only pass the user args.
-    // Which will contain the user exec args and app args.
-    // If we wanted to add it, it should be passed to withoutTrailingDoubleDash
-    // first to ensure that the user exec args are still applied.
-    args = [...originalArgs];
+    default: {
+      throw new Error(`Unknown mode: ${context.mode}`);
+    }
   }
 
   // This will be insert again when a process is spawned through a patched spawn.
@@ -98,7 +104,7 @@ function shimMain() {
   // Replace the shim script with the wrapper so it looks like the main
   process.argv.splice(1, 1, context.wrapper);
 
-  if (context.sameProcess) {
+  if (context.mode === "same-process") {
     spawnWrap.patchInternalsWithContext(context);
 
     function runMain(): void {

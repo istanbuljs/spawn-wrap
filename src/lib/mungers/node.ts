@@ -1,4 +1,4 @@
-import { SwContext } from "../context";
+import { SwContext, SwMode } from "../context";
 import { debug } from "../debug";
 import { getExeBasename } from "../exe-type";
 import { ParsedNodeOptions, parseNodeOptions } from "../parse-node-options";
@@ -9,18 +9,25 @@ export function mungeNode(ctx: SwContext, options: NormalizedOptions): Normalize
   const parsed: ParsedNodeOptions = parseNodeOptions(options.args);
 
   let newArgs: string[];
-  if (ctx.sameProcess) {
-    if (parsed.appArgs.length > 0) {
-      // Has a script
-      newArgs = [parsed.execPath, ...parsed.execArgs, "--", ctx.shimScript, ...parsed.appArgs];
-    } else {
-      // `--interactive`, `--eval`, `--version`, etc.
-      // Avoid wrapping these kind of invocations in same-process mode.
-      newArgs = [...options.args];
+  switch (ctx.mode) {
+    case SwMode.SameProcess: {
+      if (parsed.appArgs.length > 0) {
+        // Has a script
+        newArgs = [parsed.execPath, ...parsed.execArgs, "--", ctx.shimScript, ...parsed.appArgs];
+      } else {
+        // `--interactive`, `--eval`, `--version`, etc.
+        // Avoid wrapping these kind of invocations in same-process mode.
+        newArgs = [...options.args];
+      }
+      break;
     }
-  } else {
-    // In subProcess mode, the exec args are not applied to the wrapper process.
-    newArgs = [parsed.execPath, "--", ctx.shimScript,  ...parsed.execArgs, ...parsed.appArgs];
+    case SwMode.SubProcess: {
+      // In subProcess mode, the exec args are not applied to the wrapper process.
+      newArgs = [parsed.execPath, "--", ctx.shimScript,  ...parsed.execArgs, ...parsed.appArgs];
+      break;
+    }
+    default:
+      throw new Error(`Unknown mode: ${ctx.mode}`);
   }
 
   let newFile: string = options.file;

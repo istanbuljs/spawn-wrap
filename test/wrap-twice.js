@@ -8,8 +8,8 @@ const WRAPPER = require.resolve('./fixtures/wrap-twice.wrapper.js')
 switch (process.argv[2]) {
   case 'main':
     console.log('main')
-    sw.patchInternals({ wrapper: WRAPPER, data: 'outer' })
-    sw.patchInternals({ wrapper: WRAPPER, data: 'inner' })
+    sw.patchInternals({ wrapper: WRAPPER, data: 'outer', mode: 'same-process' })
+    sw.patchInternals({ wrapper: WRAPPER, data: 'inner', mode: 'same-process' })
     fg(node, [__filename, 'parent'])
     break
 

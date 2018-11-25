@@ -15,6 +15,34 @@ import { RootProcess, SwOptions } from "./types";
 const DEFAULT_SHIM_ROOT_NAME = ".node-spawn-wrap";
 const SHIM_ROOT_ENV_VAR = "SPAWN_WRAP_SHIM_ROOT";
 
+export enum SwMode {
+  /**
+   * Run the wrapped module in the same process as the wrapper.
+   *
+   * A `runMain` function will be available on the wrapper API.
+   * Changing the exec arguments will have no effect.
+   * The patched spawn calls will attempt to reduce the number of intermediate
+   * processes. At most one intermediate process may be created to ensure that
+   * the user exec args are applied.
+   * Spawned processes without a main script will not be wrapped (e.g. `--eval`,
+   * `--interactive`, etc.)
+   */
+  SameProcess = "same-process",
+
+  /**
+   * Run the wrapped module in a subprocess of the wrapper.
+   *
+   * The wrapper must take care to manually spawn the subprocess. It gets access
+   * to its arguments through the wrapper API. It must also register the
+   * internal patcher manually (through `--require ...`) to continue watching
+   * the subtree.
+   * All the node processes can be wrapped this way.
+   * This mode requires more work but grants more control other the
+   * subprocesses.
+   */
+  SubProcess = "sub-process",
+}
+
 /**
  * Spawn wrap context.
  */
@@ -27,7 +55,7 @@ export interface SwContext<D = any> {
   /**
    * Absolute system path for the corresponding dependencies.
    */
-  readonly deps: Readonly<Record<"debug" | "foregroundChild" | "isWindows" | "pathEnvVar" | "parseNodeOptions" | "signalExit", string>>;
+  readonly deps: Readonly<Record<"debug" | "foregroundChild" | "pathEnvVar" | "parseNodeOptions" | "signalExit", string>>;
 
   /**
    * Unique key identifying this context.
@@ -80,17 +108,11 @@ export interface SwContext<D = any> {
   readonly data: D;
 
   /**
-   * Run the wrapper and child process in the same process.
+   * Controls if the wrapped and wrapper modules run in the same process or not.
    *
-   * Using the same process allows to reduce memory usage and improve speed
-   * but prevents changing the node engine flags (such as
-   * `--experimental-modules`) dynamically inside the wrapper.
-   * If the spawned node process uses node engine flags, multiple processes
-   * may be used.
-   *
-   * Default: `true`.
+   * See `SwMode` documentation for more information about each mode.
    */
-  readonly sameProcess: boolean;
+  readonly mode: SwMode;
 
   /**
    * Information about the root process.
@@ -108,7 +130,7 @@ interface ResolvedOptions {
   data: any;
   key: string;
   shimDir: string;
-  sameProcess: boolean;
+  mode: SwMode;
 }
 
 export function withWrapContext<R = any>(options: SwOptions, handler: (ctx: SwContext) => Promise<R>): Promise<R> {
@@ -170,7 +192,7 @@ function realpathMkdirpSync(path: string): string {
 }
 
 /**
- * Retuns the default shim root.
+ * Returns the default shim root.
  *
  * If the environment variable `SPAWN_WRAP_SHIM_ROOT` is defined, it returns
  * its value. Otherwise, it returns the directory `.node-spawn-wrap` in the
@@ -232,9 +254,9 @@ function resolveOptions(options: SwOptions): ResolvedOptions {
   );
 
   const wrapper = path.resolve(options.wrapper);
+  const mode: SwMode = options.mode;
   const data = options.data !== undefined ? JSON.parse(JSON.stringify(options.data)) : {};
   const shimRoot = options.shimRoot !== undefined ? path.resolve(options.shimRoot) : getShimRoot();
-  const sameProcess: boolean = options.sameProcess !== undefined ? options.sameProcess : true;
 
   debug("resolveOptions wrapper=%j data=%j shimRoot=%j", wrapper, data, shimRoot);
 
@@ -246,7 +268,7 @@ function resolveOptions(options: SwOptions): ResolvedOptions {
     data,
     key,
     shimDir,
-    sameProcess,
+    mode,
   };
 }
 
@@ -256,7 +278,6 @@ function resolvedOptionsToContext(resolved: ResolvedOptions): SwContext {
     deps: Object.freeze({
       debug: require.resolve("./debug"),
       foregroundChild: require.resolve("demurgos-foreground-child"),
-      isWindows: require.resolve("is-windows"),
       pathEnvVar: require.resolve("./path-env-var"),
       parseNodeOptions: require.resolve("./parse-node-options"),
       signalExit: require.resolve("signal-exit"),
@@ -268,7 +289,7 @@ function resolvedOptionsToContext(resolved: ResolvedOptions): SwContext {
     preloadScript: path.join(resolved.shimDir, "preload.js"),
     wrapper: resolved.wrapper,
     data: resolved.data,
-    sameProcess: resolved.sameProcess,
+    mode: resolved.mode,
     root: Object.freeze({
       execPath: process.execPath,
       pid: process.pid,

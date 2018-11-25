@@ -3,7 +3,7 @@ const { spawn } = require('child_process')
 const path = require('path')
 const sw = require('../../')
 
-sw.patchInternals({ wrapper: require.resolve('./test-shim.js') })
+sw.patchInternals({ wrapper: require.resolve('./test-shim.js'), mode: 'same-process' })
 
 spawn(path.resolve(process.argv[2]), process.argv.slice(3), {
   stdio: 'inherit'

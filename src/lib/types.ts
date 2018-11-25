@@ -1,5 +1,5 @@
 import cp from "child_process";
-import { SwContext } from "./context";
+import { SwContext, SwMode } from "./context";
 
 export interface RootProcess {
   pid: number;
@@ -45,10 +45,11 @@ export interface SwOptions {
   shimRoot?: string;
 
   /**
-   * Try to run the wrapper and original main in the same process.
-   * If `true`, then `WrapperApi` will have a `runMain`, otherwise not.
+   * Run the wrapped and wrapper modules in the same process or not.
+   *
+   * See `SwMode` documentation for more details.
    */
-  sameProcess?: boolean;
+  mode: SwMode;
 }
 
 /**

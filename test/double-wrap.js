@@ -20,13 +20,13 @@ switch (process.argv[2]) {
   case 'main':
     console.error('main', process.pid, process.execArgv.concat(argv))
     console.log('main')
-    sw.patchInternals({ wrapper: WRAPPER, data: 'first' })
+    sw.patchInternals({ wrapper: WRAPPER, data: 'first', mode: 'same-process' })
     fg(node, [__filename, 'parent'])
     break
   case 'parent':
     console.error('parent', process.pid, process.execArgv.concat(argv))
     console.log('parent')
-    sw.patchInternals({ wrapper: WRAPPER, data: 'second' })
+    sw.patchInternals({ wrapper: WRAPPER, data: 'second', mode: 'same-process' })
     fg(node, [__filename, 'child'])
     break
   case 'child':

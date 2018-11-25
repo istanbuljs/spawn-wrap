@@ -8,8 +8,8 @@ function test () {
   t.test('withSpawnWrapSync', function (t) {
     t.plan(4)
 
-    const result = sw.withSpawnWrapSync({ wrapper: WRAPPER, data: { name: 'foo' } }, (fooApi) => {
-      return sw.withSpawnWrapSync({ wrapper: WRAPPER, data: { name: 'bar' } }, (barApi) => {
+    const result = sw.withSpawnWrapSync({ wrapper: WRAPPER, data: { name: 'foo' }, mode: 'same-process' }, (fooApi) => {
+      return sw.withSpawnWrapSync({ wrapper: WRAPPER, data: { name: 'bar' }, mode: 'same-process' }, (barApi) => {
         {
           const { stdout, stderr } = fooApi.spawnSync(process.execPath, [echoArgs, '1'])
           const out = stdout.toString('UTF-8')

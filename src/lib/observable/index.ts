@@ -3,8 +3,8 @@ import cp, { ChildProcess } from "child_process";
 import events from "events";
 import { Observable, Observer, Subscribable, Unsubscribable } from "rxjs";
 import { filter } from "rxjs/operators";
+import { SwMode } from "../context";
 import { Api, withSpawnWrap, WithSwOptions } from "../local";
-import { SwOptions } from "../types";
 import { ClientMessage, InfoMessage, StreamEvent } from "./protocol";
 import { RemoteSpawnClient, SpawnServer } from "./server";
 
@@ -267,7 +267,7 @@ export function observeSpawn(
           host: server.host,
           port: server.port,
         },
-        sameProcess: false,
+        mode: SwMode.SubProcess,
         api,
       };
 
