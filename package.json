@@ -23,14 +23,14 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/isaacs/spawn-wrap.git"
+    "url": "git+https://github.com/istanbuljs/spawn-wrap.git"
   },
   "author": "Isaac Z. Schlueter <i@izs.me> (http://blog.izs.me/)",
   "license": "ISC",
   "bugs": {
-    "url": "https://github.com/isaacs/spawn-wrap/issues"
+    "url": "https://github.com/istanbuljs/spawn-wrap/issues"
   },
-  "homepage": "https://github.com/isaacs/spawn-wrap#readme",
+  "homepage": "https://github.com/istanbuljs/spawn-wrap#readme",
   "devDependencies": {
     "tap": "^13.0.0-rc.25"
   },
