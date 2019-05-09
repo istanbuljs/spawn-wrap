@@ -15,7 +15,7 @@
     "which": "^1.3.0"
   },
   "scripts": {
-    "test": "tap",
+    "test": "tap \"test/*.js\"",
     "preversion": "npm test",
     "postversion": "npm publish",
     "postpublish": "git push origin --all; git push origin --tags",
@@ -32,7 +32,7 @@
   },
   "homepage": "https://github.com/istanbuljs/spawn-wrap#readme",
   "devDependencies": {
-    "tap": "^13.0.0-rc.25"
+    "tap": "^13.1.6"
   },
   "files": [
     "index.js",
