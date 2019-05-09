@@ -3,6 +3,9 @@
   "version": "1.4.2",
   "description": "Wrap all spawned Node.js child processes by adding environs and arguments ahead of the main JavaScript file argument.",
   "main": "index.js",
+  "engines": {
+    "node": ">=8.0.0"
+  },
   "dependencies": {
     "foreground-child": "^1.5.6",
     "mkdirp": "^0.5.0",
