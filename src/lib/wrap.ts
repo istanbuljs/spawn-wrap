@@ -28,6 +28,6 @@ export function wrapSpawn<F extends (typeof cp.spawn | typeof cp.spawnSync)>(ctx
     args?: ReadonlyArray<string>,
     options?: cp.SpawnOptions | cp.SpawnSyncOptions,
   ): any {
-    return fn.call(this, ...mungeSpawn(ctx, [file, args, options]));
+    return (fn as any).call(this, ...mungeSpawn(ctx, [file, args, options]));
   }
 }

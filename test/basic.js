@@ -16,9 +16,9 @@ var unwrap = sw.patchInternals({ wrapper: WRAPPER, mode: 'same-process' })
 
 const NODE_MAJOR_VERSION = parseInt(process.versions.node.split('.')[0])
 // https://github.com/nodejs/node/issues/24647
-const DOUBLE_DASH = NODE_MAJOR_VERSION >= 10 ? '"--"' : ''
-const DOUBLE_DASH_COMMA = NODE_MAJOR_VERSION >= 10 ? '"--",' : ''
-const COMMA_DOUBLE_DASH = NODE_MAJOR_VERSION >= 10 ? ',"--"' : ''
+const DOUBLE_DASH = NODE_MAJOR_VERSION >= 10 ? '' : ''
+const DOUBLE_DASH_COMMA = NODE_MAJOR_VERSION >= 10 ? '' : ''
+const COMMA_DOUBLE_DASH = NODE_MAJOR_VERSION >= 10 ? '' : ''
 
 var expect = 'WRAP [' + DOUBLE_DASH_COMMA + '"{{FIXTURE}}","xyz"]\n' +
   '[' + DOUBLE_DASH + ']\n' +
