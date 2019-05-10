@@ -1,45 +1,48 @@
 module.exports = wrap
 wrap.runMain = runMain
 
-var Module = require('module')
-var fs = require('fs')
-var cp = require('child_process')
-var ChildProcess = cp.ChildProcess
-var assert = require('assert')
-var crypto = require('crypto')
-var mkdirp = require('mkdirp')
-var rimraf = require('rimraf')
-var path = require('path')
-var signalExit = require('signal-exit')
-var home = process.env.SPAWN_WRAP_SHIM_ROOT || require('os-homedir')()
-var homedir = home + '/.node-spawn-wrap-'
-var which = require('which')
-var util = require('util')
+const Module = require('module')
+const fs = require('fs')
+const cp = require('child_process')
+let ChildProcess = cp.ChildProcess
+const assert = require('assert')
+const crypto = require('crypto')
+const mkdirp = require('mkdirp')
+const rimraf = require('rimraf')
+const path = require('path')
+const signalExit = require('signal-exit')
+const home = process.env.SPAWN_WRAP_SHIM_ROOT || require('os-homedir')()
+const homedir = home + '/.node-spawn-wrap-'
+const which = require('which')
+const util = require('util')
 
-var doDebug = process.env.SPAWN_WRAP_DEBUG === '1'
-var debug = doDebug ? function () {
-  var message = util.format.apply(util, arguments).trim()
-  var pref = 'SW ' + process.pid + ': '
-  message = pref + message.split('\n').join('\n' + pref)
+const doDebug = process.env.SPAWN_WRAP_DEBUG === '1'
+
+function debug () {
+  if (!doDebug) {
+    return
+  }
+  const prefix = 'SW ' + process.pid + ': '
+  const data = util.format.apply(util, arguments).trim()
+  const message = prefix + data.split('\n').join('\n' + prefix)
   process.stderr.write(message + '\n')
-} : function () {}
+}
 
-var shebang = process.platform === 'os390' ?
+const shebang = process.platform === 'os390' ?
   '#!/bin/env ' : '#!'
 
-var shim = shebang + process.execPath + '\n' +
-  fs.readFileSync(__dirname + '/shim.js')
+const shim = shebang + process.execPath + '\n' +
+  fs.readFileSync(path.join(__dirname, 'shim.js'))
 
-var isWindows = require('./lib/is-windows')()
+const isWindows = require('./lib/is-windows')()
 
-var pathRe = /^PATH=/
-if (isWindows) pathRe = /^PATH=/i
+const pathRe = isWindows ? /^PATH=/i : /^PATH=/
 
-var colon = isWindows ? ';' : ':'
+const colon = isWindows ? ';' : ':'
 
 function wrap (argv, env, workingDir) {
   if (!ChildProcess) {
-    var child = cp.spawn(process.execPath, [])
+    const child = cp.spawn(process.execPath, [])
     ChildProcess = child.constructor
     if (process.platform === 'os390')
       child.kill('SIGABRT')
@@ -48,18 +51,18 @@ function wrap (argv, env, workingDir) {
   }
 
   // spawn_sync available since Node v0.11
-  var spawnSyncBinding, spawnSync
+  let spawnSyncBinding, spawnSync
   try {
     spawnSyncBinding = process.binding('spawn_sync')
   } catch (e) {}
 
   // if we're passed in the working dir, then it means that setup
   // was already done, so no need.
-  var doSetup = !workingDir
+  const doSetup = !workingDir
   if (doSetup) {
     workingDir = setup(argv, env)
   }
-  var spawn = ChildProcess.prototype.spawn
+  const spawn = ChildProcess.prototype.spawn
   if (spawnSyncBinding) {
     spawnSync = spawnSyncBinding.spawn
   }
@@ -100,23 +103,25 @@ function isSh (file) {
 }
 
 function mungeSh (workingDir, options) {
-  var cmdi = options.args.indexOf('-c')
-  if (cmdi === -1)
+  const cmdi = options.args.indexOf('-c')
+  if (cmdi === -1) {
     return // no -c argument
+  }
 
-  var c = options.args[cmdi + 1]
-  var re = /^\s*((?:[^\= ]*\=[^\=\s]*)*[\s]*)([^\s]+|"[^"]+"|'[^']+')( .*)?$/
-  var match = c.match(re)
-  if (!match)
+  let c = options.args[cmdi + 1]
+  const re = /^\s*((?:[^\= ]*\=[^\=\s]*)*[\s]*)([^\s]+|"[^"]+"|'[^']+')( .*)?$/
+  const match = c.match(re)
+  if (match === null) {
     return // not a command invocation.  weird but possible
+  }
 
-  var command = match[2]
+  let command = match[2]
   // strip quotes off the command
-  var quote = command.charAt(0)
+  const quote = command.charAt(0)
   if ((quote === '"' || quote === '\'') && quote === command.slice(-1)) {
     command = command.slice(1, -1)
   }
-  var exe = path.basename(command)
+  const exe = path.basename(command)
 
   if (isNode(exe)) {
     options.originalNode = command
@@ -125,7 +130,7 @@ function mungeSh (workingDir, options) {
   } else if (exe === 'npm' && !isWindows) {
     // XXX this will exhibit weird behavior when using /path/to/npm,
     // if some other npm is first in the path.
-    var npmPath = whichOrUndefined('npm')
+    const npmPath = whichOrUndefined('npm')
 
     if (npmPath) {
       c = c.replace(re, '$1 "' + workingDir + '/node" "' + npmPath + '" $3')
@@ -136,27 +141,26 @@ function mungeSh (workingDir, options) {
 }
 
 function isCmd (file) {
-  var comspec = path.basename(process.env.comspec || '').replace(/\.exe$/i, '')
+  const comspec = path.basename(process.env.comspec || '').replace(/\.exe$/i, '')
   return isWindows && (file === comspec || /^cmd(\.exe|\.EXE)?$/.test(file))
 }
 
 function mungeCmd (workingDir, options) {
-  var cmdi = options.args.indexOf('/c')
-  if (cmdi === -1)
+  const cmdi = options.args.indexOf('/c')
+  if (cmdi === -1) {
     return
+  }
 
-  var re = /^\s*("*)([^"]*?\b(?:node|iojs)(?:\.exe|\.EXE)?)("*)( .*)?$/
-  var npmre = /^\s*("*)([^"]*?\b(?:npm))("*)( |$)/
-  var path_ = require('path')
-  if (path_.win32)
-    path_ = path_.win32
+  const re = /^\s*("*)([^"]*?\b(?:node|iojs)(?:\.exe|\.EXE)?)("*)( .*)?$/
+  const npmre = /^\s*("*)([^"]*?\b(?:npm))("*)( |$)/
 
-  var command = options.args[cmdi + 1]
-  if (!command)
+  const command = options.args[cmdi + 1]
+  if (command === undefined) {
     return
+  }
 
-  var m = command.match(re)
-  var replace
+  let m = command.match(re)
+  let replace
   if (m) {
     options.originalNode = m[2]
     replace = m[1] + workingDir + '/node.cmd' + m[3] + m[4]
@@ -167,32 +171,33 @@ function mungeCmd (workingDir, options) {
     // path if it's a full path to npm.  And if it's not a full path to
     // npm, then the dirname will not work properly!
     m = command.match(npmre)
-    if (!m)
+    if (m === null) {
       return
+    }
 
-    var npmPath = whichOrUndefined('npm') || 'npm'
-    npmPath = path_.dirname(npmPath) + '\\node_modules\\npm\\bin\\npm-cli.js'
+    let npmPath = whichOrUndefined('npm') || 'npm'
+    npmPath = path.dirname(npmPath) + '\\node_modules\\npm\\bin\\npm-cli.js'
     replace = m[1] + workingDir + '/node.cmd' +
-              ' "' + npmPath + '"' +
-              m[3] + m[4]
+      ' "' + npmPath + '"' +
+      m[3] + m[4]
     options.args[cmdi + 1] = command.replace(npmre, replace)
   }
 }
 
 function isNode (file) {
-  var cmdname = path.basename(process.execPath).replace(/\.exe$/i, '')
-  return file === 'node' || file === 'iojs' || cmdname === file
+  const cmdname = path.basename(process.execPath).replace(/\.exe$/i, '')
+  return file === 'node' || cmdname === file
 }
 
 function mungeNode (workingDir, options) {
   options.originalNode = options.file
-  var command = path.basename(options.file).replace(/\.exe$/i, '')
+  const command = path.basename(options.file).replace(/\.exe$/i, '')
   // make sure it has a main script.
   // otherwise, just let it through.
-  var a = 0
-  var hasMain = false
-  var mainIndex = 1
-  for (var a = 1; !hasMain && a < options.args.length; a++) {
+  let a = 0
+  let hasMain = false
+  let mainIndex = 1
+  for (a = 1; !hasMain && a < options.args.length; a++) {
     switch (options.args[a]) {
       case '-p':
       case '-i':
@@ -222,7 +227,7 @@ function mungeNode (workingDir, options) {
   }
 
   if (hasMain) {
-    var replace = workingDir + '/' + command
+    const replace = workingDir + '/' + command
     options.args.splice(mainIndex, 0, replace)
   }
 
@@ -232,7 +237,7 @@ function mungeNode (workingDir, options) {
   // This also handles the case where there's not a main file, like
   // `node -e 'program'`, where we want to avoid the shim entirely.
   if (options.file === options.basename) {
-    var realNode = whichOrUndefined(options.file) || process.execPath
+    const realNode = whichOrUndefined(options.file) || process.execPath
     options.file = options.args[0] = realNode
   }
 
@@ -240,24 +245,27 @@ function mungeNode (workingDir, options) {
 }
 
 function mungeShebang (workingDir, options) {
+  let resolved
   try {
-    var resolved = which.sync(options.file)
-  } catch (er) {
+    resolved = which.sync(options.file)
+  } catch (err) {
     // nothing to do if we can't resolve
     // Most likely: file doesn't exist or is not executable.
     // Let exec pass through, probably will fail, oh well.
     return
   }
 
-  var shebang = fs.readFileSync(resolved, 'utf8')
-  var match = shebang.match(/^#!([^\r\n]+)/)
-  if (!match)
+  const shebang = fs.readFileSync(resolved, 'utf8')
+  const match = shebang.match(/^#!([^\r\n]+)/)
+  if (!match) {
     return // not a shebang script, probably a binary
+  }
 
-  var shebangbin = match[1].split(' ')[0]
-  var maybeNode = path.basename(shebangbin)
-  if (!isNode(maybeNode))
+  const shebangbin = match[1].split(' ')[0]
+  const maybeNode = path.basename(shebangbin)
+  if (!isNode(maybeNode)) {
     return // not a node shebang, leave untouched
+  }
 
   options.originalNode = shebangbin
   options.basename = maybeNode
@@ -269,27 +277,28 @@ function mungeShebang (workingDir, options) {
 }
 
 function mungeEnv (workingDir, options) {
-  var pathEnv
-  for (var i = 0; i < options.envPairs.length; i++) {
-    var ep = options.envPairs[i]
-    if (ep.match(pathRe)) {
+  let pathEnv
+  for (let i = 0; i < options.envPairs.length; i++) {
+    const ep = options.envPairs[i]
+    if (pathRe.test(ep)) {
       pathEnv = ep.substr(5)
-      var k = ep.substr(0, 5)
+      const k = ep.substr(0, 5)
       options.envPairs[i] = k + workingDir + colon + pathEnv
     }
   }
-  if (!pathEnv) {
+  if (pathEnv === undefined) {
     options.envPairs.push((isWindows ? 'Path=' : 'PATH=') + workingDir)
   }
   if (options.originalNode) {
-    var key = path.basename(workingDir).substr('.node-spawn-wrap-'.length)
+    const key = path.basename(workingDir).substr('.node-spawn-wrap-'.length)
     options.envPairs.push('SW_ORIG_' + key + '=' + options.originalNode)
   }
 
   options.envPairs.push('SPAWN_WRAP_SHIM_ROOT=' + homedir)
 
-  if (process.env.SPAWN_WRAP_DEBUG === '1')
+  if (process.env.SPAWN_WRAP_DEBUG === '1') {
     options.envPairs.push('SPAWN_WRAP_DEBUG=1')
+  }
 }
 
 function isnpm (file) {
@@ -301,9 +310,9 @@ function isnpm (file) {
 function mungenpm (workingDir, options) {
   debug('munge npm')
   // XXX weird effects of replacing a specific npm with a global one
-  var npmPath = whichOrUndefined('npm')
+  const npmPath = whichOrUndefined('npm')
 
-  if (npmPath) {
+  if (npmPath !== undefined) {
     options.args[0] = npmPath
 
     options.file = workingDir + '/node'
@@ -337,10 +346,11 @@ function munge (workingDir, options) {
 }
 
 function whichOrUndefined (executable) {
-  var path
+  let path
   try {
     path = which.sync(executable)
-  } catch (er) {}
+  } catch (er) {
+  }
   return path
 }
 
@@ -355,7 +365,7 @@ function setup (argv, env) {
   }
 
   if (argv) {
-    assert(Array.isArray(argv), 'argv must be array')
+    assert(Array.isArray(argv), 'argv must be an array')
   } else {
     argv = []
   }
@@ -370,8 +380,8 @@ function setup (argv, env) {
 
   // For stuff like --use_strict or --harmony, we need to inject
   // the argument *before* the wrap-main.
-  var execArgv = []
-  for (var i = 0; i < argv.length; i++) {
+  const execArgv = []
+  for (let i = 0; i < argv.length; i++) {
     if (argv[i].match(/^-/)) {
       execArgv.push(argv[i])
       if (argv[i] === '-r' || argv[i] === '--require') {
@@ -389,10 +399,10 @@ function setup (argv, env) {
     }
   }
 
-  var key = process.pid + '-' + crypto.randomBytes(6).toString('hex')
-  var workingDir = homedir + key
+  let key = process.pid + '-' + crypto.randomBytes(6).toString('hex')
+  let workingDir = homedir + key
 
-  var settings = JSON.stringify({
+  const settings = JSON.stringify({
     module: __filename,
     deps: {
       foregroundChild: require.resolve('foreground-child'),
@@ -407,14 +417,15 @@ function setup (argv, env) {
   }, null, 2) + '\n'
 
   signalExit(function () {
-    if (!doDebug)
+    if (!doDebug) {
       rimraf.sync(workingDir)
+    }
   })
 
   mkdirp.sync(workingDir)
   workingDir = fs.realpathSync(workingDir)
   if (isWindows) {
-    var cmdShim =
+    const cmdShim =
       '@echo off\r\n' +
       'SETLOCAL\r\n' +
       'SET PATHEXT=%PATHEXT:;.JS;=;%\r\n' +
@@ -429,7 +440,7 @@ function setup (argv, env) {
   fs.chmodSync(workingDir + '/node', '0755')
   fs.writeFileSync(workingDir + '/iojs', shim)
   fs.chmodSync(workingDir + '/iojs', '0755')
-  var cmdname = path.basename(process.execPath).replace(/\.exe$/i, '')
+  const cmdname = path.basename(process.execPath).replace(/\.exe$/i, '')
   if (cmdname !== 'iojs' && cmdname !== 'node') {
     fs.writeFileSync(workingDir + '/' + cmdname, shim)
     fs.chmodSync(workingDir + '/' + cmdname, '0755')
