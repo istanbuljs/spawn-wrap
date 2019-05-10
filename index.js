@@ -142,16 +142,16 @@ function mungeSh (workingDir, options) {
 
 function isCmd (file) {
   const comspec = path.basename(process.env.comspec || '').replace(/\.exe$/i, '')
-  return isWindows && (file === comspec || /^cmd(\.exe|\.EXE)?$/.test(file))
+  return isWindows && (file === comspec || /^cmd(?:\.exe)?$/i.test(file))
 }
 
-function mungeCmd (workingDir, options) {
+function mungeCmd(workingDir, options) {
   const cmdi = options.args.indexOf('/c')
   if (cmdi === -1) {
     return
   }
 
-  const re = /^\s*("*)([^"]*?\b(?:node|iojs)(?:\.exe|\.EXE)?)("*)( .*)?$/
+  const re = /^\s*("*)([^"]*?\bnode(?:\.exe|\.EXE)?)("*)( .*)?$/
   const npmre = /^\s*("*)([^"]*?\b(?:npm))("*)( |$)/
 
   const command = options.args[cmdi + 1]
@@ -433,15 +433,11 @@ function setup (argv, env) {
 
     fs.writeFileSync(workingDir + '/node.cmd', cmdShim)
     fs.chmodSync(workingDir + '/node.cmd', '0755')
-    fs.writeFileSync(workingDir + '/iojs.cmd', cmdShim)
-    fs.chmodSync(workingDir + '/iojs.cmd', '0755')
   }
   fs.writeFileSync(workingDir + '/node', shim)
   fs.chmodSync(workingDir + '/node', '0755')
-  fs.writeFileSync(workingDir + '/iojs', shim)
-  fs.chmodSync(workingDir + '/iojs', '0755')
   const cmdname = path.basename(process.execPath).replace(/\.exe$/i, '')
-  if (cmdname !== 'iojs' && cmdname !== 'node') {
+  if (cmdname !== 'node') {
     fs.writeFileSync(workingDir + '/' + cmdname, shim)
     fs.chmodSync(workingDir + '/' + cmdname, '0755')
   }
