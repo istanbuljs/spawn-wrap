@@ -4,7 +4,7 @@ wrap.runMain = runMain
 const Module = require('module')
 const fs = require('fs')
 const cp = require('child_process')
-let ChildProcess = cp.ChildProcess
+const ChildProcess = cp.ChildProcess
 const assert = require('assert')
 const crypto = require('crypto')
 const mkdirp = require('mkdirp')
@@ -41,15 +41,6 @@ const pathRe = isWindows ? /^PATH=/i : /^PATH=/
 const colon = isWindows ? ';' : ':'
 
 function wrap (argv, env, workingDir) {
-  if (!ChildProcess) {
-    const child = cp.spawn(process.execPath, [])
-    ChildProcess = child.constructor
-    if (process.platform === 'os390')
-      child.kill('SIGABRT')
-    else
-      child.kill('SIGKILL')
-  }
-
   // spawn_sync available since Node v0.11
   let spawnSyncBinding, spawnSync
   try {
