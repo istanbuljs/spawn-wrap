@@ -8,6 +8,7 @@
   },
   "dependencies": {
     "foreground-child": "^1.5.6",
+    "is-windows": "^1.0.2",
     "mkdirp": "^0.5.0",
     "os-homedir": "^1.0.1",
     "rimraf": "^2.6.2",
@@ -36,8 +37,7 @@
   },
   "files": [
     "index.js",
-    "shim.js",
-    "lib/is-windows.js"
+    "shim.js"
   ],
   "tap": {
     "coverage": false,
