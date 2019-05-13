@@ -123,11 +123,9 @@ function setup(argv, env) {
     root: process.pid
   }, null, 2) + '\n'
 
-  signalExit(function () {
-    if (!IS_DEBUG) {
-      rimraf.sync(workingDir)
-    }
-  })
+  if (!IS_DEBUG) {
+    signalExit(() => rimraf.sync(workingDir))
+  }
 
   mkdirp.sync(workingDir)
   workingDir = fs.realpathSync(workingDir)
