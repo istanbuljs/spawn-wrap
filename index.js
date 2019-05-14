@@ -15,8 +15,8 @@ const rimraf = require('rimraf')
 const path = require('path')
 const signalExit = require('signal-exit')
 const {IS_DEBUG, debug} = require("./lib/debug")
-const {munge} = require("./lib/munge")
-const {homedir} = require("./lib/homedir")
+const munge = require("./lib/munge")
+const homedir = require("./lib/homedir")
 
 const shebang = process.platform === 'os390' ?
   '#!/bin/env ' : '#!'
