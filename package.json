@@ -15,7 +15,7 @@
     "which": "^1.3.0"
   },
   "scripts": {
-    "test": "tap",
+    "test": "cross-env NODE_DEBUG=tap tap",
     "preversion": "npm test",
     "postversion": "npm publish",
     "postpublish": "git push origin --all; git push origin --tags",
@@ -32,6 +32,7 @@
   },
   "homepage": "https://github.com/istanbuljs/spawn-wrap#readme",
   "devDependencies": {
+    "cross-env": "^5.2.0",
     "tap": "^13.1.10"
   },
   "files": [
