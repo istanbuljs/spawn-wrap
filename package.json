@@ -33,7 +33,7 @@
   "homepage": "https://github.com/istanbuljs/spawn-wrap#readme",
   "devDependencies": {
     "cross-env": "^5.2.0",
-    "tap": "^13.1.10"
+    "tap": "^13.1.11"
   },
   "files": [
     "lib/",
