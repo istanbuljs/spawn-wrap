@@ -10,7 +10,7 @@ const ChildProcess = cp.ChildProcess
 const assert = require('assert')
 const crypto = require('crypto')
 const IS_WINDOWS = require('is-windows')()
-const mkdirp = require('mkdirp')
+const makeDir = require('make-dir')
 const rimraf = require('rimraf')
 const path = require('path')
 const signalExit = require('signal-exit')
@@ -127,7 +127,7 @@ function setup(argv, env) {
     signalExit(() => rimraf.sync(workingDir))
   }
 
-  mkdirp.sync(workingDir)
+  makeDir.sync(workingDir)
   workingDir = fs.realpathSync(workingDir)
   if (IS_WINDOWS) {
     const cmdShim =
