@@ -18,32 +18,13 @@
     throw new Error('spawn-wrap: cli wrapper invoked as non-main script')
   }
 
-  let util
-  const doDebug = process.env.SPAWN_WRAP_DEBUG === '1'
-  let fs
-
-  function debug () {
-    if (!doDebug) {
-      return
-    }
-
-    if (!fs) {
-      fs = require('fs')
-      util = require('util')
-    }
-
-    let message = util.format.apply(util, arguments).trim()
-    const pref = 'SW ' + process.pid + ': '
-    message = pref + message.split('\n').join('\n' + pref)
-    fs.writeSync(2, message + '\n')
-  }
+  const Module = require('module')
+  const path = require('path')
+  const settings = require('./settings.json')
+  const {debug} = require(settings.deps.debug)
 
   debug('shim', [process.argv[0]].concat(process.execArgv, process.argv.slice(1)))
 
-  const Module = require('module')
-  const path = require('path')
-
-  const settings = require('./settings.json')
   const foregroundChild = require(settings.deps.foregroundChild)
   const IS_WINDOWS = settings.isWindows
   const argv = settings.argv
@@ -52,9 +33,7 @@
   const key = settings.key
   const node = process.env['SW_ORIG_' + key] || process.execPath
 
-  for (const k in env) {
-    process.env[k] = env[k]
-  }
+  Object.assign(process.env, env)
 
   const needExecArgv = settings.execArgv || []
 
@@ -98,7 +77,7 @@
 
       default:
         // TODO: Double-check what's going on
-        if (process.argv[a].match(/^-/)) {
+        if (process.argv[a].startsWith('-')) {
           continue
         } else {
           hasMain = a
@@ -116,7 +95,7 @@
     // directly to node.  This also splices out the user-supplied
     // execArgv from the argv.
     const addExecArgv = process.argv.splice(2, hasMain - 2)
-    needExecArgv.push.apply(needExecArgv, addExecArgv)
+    needExecArgv.push(...addExecArgv)
   }
 
   if (!hasMain) {
@@ -144,8 +123,7 @@
   // At this point, we've verified that we got the correct execArgv,
   // and that we have a main file, and that the main file is sitting at
   // argv[2].  Splice this shim off the list so it looks like the main.
-  const spliceArgs = [1, 1].concat(argv)
-  process.argv.splice.apply(process.argv, spliceArgs)
+  process.argv.splice(1, 1, ...argv)
 
   // Unwrap the PATH environment var so that we're not mucking
   // with the environment.  It'll get re-added if they spawn anything
