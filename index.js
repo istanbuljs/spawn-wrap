@@ -54,9 +54,9 @@ function wrappedSpawnFunction (fn, workingDir) {
   return wrappedSpawn
 
   function wrappedSpawn (options) {
-    munge(workingDir, options)
-    debug('WRAPPED', options)
-    return fn.call(this, options)
+    const mungedOptions = munge(workingDir, options)
+    debug('WRAPPED', mungedOptions)
+    return fn.call(this, mungedOptions)
   }
 }
 
