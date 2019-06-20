@@ -88,7 +88,7 @@ function setup(argv, env) {
   // the argument *before* the wrap-main.
   const execArgv = []
   for (let i = 0; i < argv.length; i++) {
-    if (argv[i].match(/^-/)) {
+    if (argv[i].startsWith('-')) {
       execArgv.push(argv[i])
       if (argv[i] === '-r' || argv[i] === '--require') {
         execArgv.push(argv[++i])
@@ -105,7 +105,7 @@ function setup(argv, env) {
     }
   }
 
-  let key = process.pid + '-' + crypto.randomBytes(6).toString('hex')
+  const key = process.pid + '-' + crypto.randomBytes(6).toString('hex')
   let workingDir = homedir + key
 
   const settings = JSON.stringify({
@@ -113,13 +113,14 @@ function setup(argv, env) {
     deps: {
       foregroundChild: require.resolve('foreground-child'),
       signalExit: require.resolve('signal-exit'),
+      debug: require.resolve('./lib/debug')
     },
     isWindows: IS_WINDOWS,
-    key: key,
-    workingDir: workingDir,
-    argv: argv,
-    execArgv: execArgv,
-    env: env,
+    key,
+    workingDir,
+    argv,
+    execArgv,
+    env,
     root: process.pid
   }, null, 2) + '\n'
 
@@ -134,7 +135,7 @@ function setup(argv, env) {
       '@echo off\r\n' +
       'SETLOCAL\r\n' +
       'SET PATHEXT=%PATHEXT:;.JS;=;%\r\n' +
-      '"' + process.execPath + '"' + ' "%~dp0\\.\\node" %*\r\n'
+      '"' + process.execPath + '" "%~dp0\\.\\node" %*\r\n'
 
     fs.writeFileSync(path.join(workingDir, 'node.cmd'), cmdShim)
     fs.chmodSync(path.join(workingDir, 'node.cmd'), '0755')
