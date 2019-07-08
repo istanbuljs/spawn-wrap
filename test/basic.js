@@ -193,7 +193,7 @@ t.test('spawn node', function (t) {
 })
 
 t.test('exec execPath', function (t) {
-  t.plan(5)
+  t.plan(4)
 
   t.test('basic', function (t) {
     var opt = IS_WINDOWS ? null : { shell: '/bin/bash' }
@@ -227,31 +227,6 @@ t.test('exec execPath', function (t) {
       t.end()
     })
   })
-
-  t.test('spaces in path on windows', { skip: !IS_WINDOWS }, function(t) {
-
-    //create temp folder with spaces in path
-    var dir = path.join(__dirname, 'fixtures', 'space path');
-    fs.mkdirSync(dir);
-    var fp = path.join(__dirname, 'fixtures', 'space path', 'node.exe');
-    fs.writeFileSync(fp, fs.readFileSync(process.execPath));
-    fs.chmodSync(fp, '0775');
-
-    var child = cp.exec(JSON.stringify(fp) + ' ' + fixture + ' xyz', null);
-    var out = ''
-    child.stdout.on('data', function (c) {
-      out += c
-    });
-
-    child.on('close', function (code, signal) {
-      t.equal(code, 0)
-      t.equal(signal, null)
-      t.equal(out, expect)
-      fs.unlinkSync(fp);
-      fs.rmdirSync(dir);
-      t.end();
-    });
-  });
 
   t.test('SIGINT', { skip: winNoSig }, function (t) {
     var child = cp.exec(process.execPath + ' ' + fixture + ' xyz', { shell: '/bin/bash' })
