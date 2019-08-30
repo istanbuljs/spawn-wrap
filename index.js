@@ -147,6 +147,24 @@ function setup(argv, env) {
     fs.writeFileSync(path.join(workingDir, cmdname), shim)
     fs.chmodSync(path.join(workingDir, cmdname), '0755')
   }
+  else if (cmdname === 'node') {
+    const nodePath = path.dirname(process.execPath)
+    const cmds = JSON.parse(env.NYC_CONFIG)._
+    cmds.forEach((cmd) => {
+      const filepath = path.resolve(nodePath, cmd)
+      if (fs.existsSync(filepath + '.cmd')) {
+        const batch = fs.readFileSync(filepath + '.cmd', 'utf8')
+        const shell = fs.readFileSync(filepath, 'utf8')
+        const powershell = fs.readFileSync(filepath + '.ps1', 'utf8')
+        fs.writeFileSync(workingDir + '/' + cmd + '.cmd', batch.replace('"%_prog%"  "%dp0%', '"%_prog%"  "' + nodePath))
+        fs.chmodSync(workingDir + '/' + cmd + '.cmd', '0755')
+        fs.writeFileSync(workingDir + '/' + cmd, shell.replace('"$basedir/node"  "$basedir', '"$basedir/node"  "' + nodePath))
+        fs.chmodSync(workingDir + '/' + cmd, '0755')
+        fs.writeFileSync(workingDir + '/' + cmd + '.ps1', powershell.replace('node$exe"  "$basedir', 'node$exe"  "' + nodePath))
+        fs.chmodSync(workingDir + '/' + cmd + '.ps1', '0755')
+      }
+    })
+  }
   fs.writeFileSync(path.join(workingDir, 'settings.json'), settings)
 
   return workingDir
