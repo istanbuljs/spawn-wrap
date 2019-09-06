@@ -134,8 +134,13 @@ function setup(argv, env) {
     const cmdShim =
       '@echo off\r\n' +
       'SETLOCAL\r\n' +
+      'CALL :find_dp0\r\n' +
       'SET PATHEXT=%PATHEXT:;.JS;=;%\r\n' +
       '"' + process.execPath + '" "%~dp0\\.\\node" %*\r\n'
+      'EXIT /b %errorlevel%\r\n'+
+      ':find_dp0\r\n' +
+      'SET dp0=%~dp0\r\n' +
+      'EXIT /b\r\n'
 
     fs.writeFileSync(path.join(workingDir, 'node.cmd'), cmdShim)
     fs.chmodSync(path.join(workingDir, 'node.cmd'), '0755')
