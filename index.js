@@ -106,7 +106,7 @@ function setup(argv, env) {
   }
 
   const key = process.pid + '-' + crypto.randomBytes(6).toString('hex')
-  let workingDir = homedir + key
+  let workingDir = path.resolve(homedir, `.node-spawn-wrap-${key}`)
 
   const settings = JSON.stringify({
     module: __filename,
