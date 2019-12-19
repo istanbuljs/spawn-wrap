@@ -16,9 +16,7 @@
   },
   "scripts": {
     "test": "tap",
-    "preversion": "npm test",
-    "postversion": "npm publish",
-    "postpublish": "git push origin --all; git push origin --tags",
+    "release": "standard-version",
     "clean": "rm -rf ~/.node-spawn-wrap-*"
   },
   "repository": {
@@ -32,7 +30,8 @@
   },
   "homepage": "https://github.com/istanbuljs/spawn-wrap#readme",
   "devDependencies": {
-    "tap": "^14.6.9"
+    "standard-version": "^7.1.0",
+    "tap": "^14.10.5"
   },
   "files": [
     "lib/",
