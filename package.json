@@ -1,6 +1,6 @@
 {
   "name": "spawn-wrap",
-  "version": "2.0.0-beta.0",
+  "version": "2.0.0",
   "description": "Wrap all spawned Node.js child processes by adding environs and arguments ahead of the main JavaScript file argument.",
   "main": "index.js",
   "engines": {
