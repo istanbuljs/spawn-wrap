@@ -1,12 +1,12 @@
 on:
   push:
     branches:
-      - master
+      - main
 name: release-please
 jobs:
   release-please:
     runs-on: ubuntu-latest
-    if: github.repository == 'istanbuljs/istanbul-lib-processinfo'
+    if: github.repository == 'istanbuljs/spawn-wrap'
     steps:
       - uses: google-github-actions/release-please-action@v4
         id: release
