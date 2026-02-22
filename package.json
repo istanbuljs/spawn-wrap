@@ -7,16 +7,16 @@
     "node": ">=8"
   },
   "dependencies": {
+    "cross-spawn": "^7.0.6",
     "foreground-child": "^2.0.0",
     "is-windows": "^1.0.2",
     "make-dir": "^3.0.0",
-    "rimraf": "^3.0.0",
+    "rimraf": "^6.1.3",
     "signal-exit": "^3.0.2",
     "which": "^2.0.1"
   },
   "scripts": {
     "test": "tap",
-    "release": "standard-version",
     "clean": "rm -rf ~/.node-spawn-wrap-*"
   },
   "repository": {
@@ -30,7 +30,6 @@
   },
   "homepage": "https://github.com/istanbuljs/spawn-wrap#readme",
   "devDependencies": {
-    "standard-version": "^7.1.0",
     "tap": "^15.1.6"
   },
   "files": [
