@@ -108,6 +108,8 @@ t.test('spawn execPath', function (t) {
     var out = ''
     child.stdout.on('data', function (c) {
       out += c
+    })
+    child.stdout.once('data', function () {
       child.kill('SIGHUP')
     })
     child.on('close', function (code, signal) {
@@ -178,6 +180,8 @@ t.test('spawn node', function (t) {
     var out = ''
     child.stdout.on('data', function (c) {
       out += c
+    })
+    child.stdout.once('data', function () {
       child.kill('SIGHUP')
     })
     child.on('close', function (code, signal) {
@@ -257,6 +261,8 @@ t.test('exec execPath', function (t) {
     var out = ''
     child.stdout.on('data', function (c) {
       out += c
+    })
+    child.stdout.once('data', function () {
       child.kill('SIGHUP')
     })
     child.on('close', function (code, signal) {
@@ -295,6 +301,8 @@ t.test('exec shebang', { skip: winNoShebang }, function (t) {
     var out = ''
     child.stdout.on('data', function (c) {
       out += c
+    })
+    child.stdout.once('data', function () {
       child.kill('SIGHUP')
     })
     child.on('close', function (code, signal) {

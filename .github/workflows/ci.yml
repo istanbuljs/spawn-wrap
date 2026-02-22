@@ -6,7 +6,7 @@ jobs:
   build:
     strategy:
       matrix:
-        node-version: [12.x, 14.x, 16.x, 17.x]
+        node-version: [20, 24]
         platform:
         - os: ubuntu-latest
           shell: bash
@@ -33,7 +33,7 @@ jobs:
           node-version: ${{ matrix.node-version }}
 
       - name: Install dependencies
-        run: npm install
+        run: npm ci --engine-strict
 
       - name: Run Tests
         run: npm test -- -c -t0
