@@ -2,6 +2,17 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.0.0](https://github.com/istanbuljs/spawn-wrap/compare/spawn-wrap-v2.0.0...spawn-wrap-v3.0.0) (2026-02-22)
+
+
+### ⚠ BREAKING CHANGES
+
+* **deps:** node 20 || >=22 is now required due to transitive deps.
+
+### Features
+
+* **deps:** update deps addressing issue with minimatch ([#128](https://github.com/istanbuljs/spawn-wrap/issues/128)) ([2c2745d](https://github.com/istanbuljs/spawn-wrap/commit/2c2745de15bf93ebe2357501df7e32452ab20956))
+
 ## [2.0.0](https://github.com/istanbuljs/spawn-wrap/compare/v1.4.3...v2.0.0) (2019-12-20)
 
 
